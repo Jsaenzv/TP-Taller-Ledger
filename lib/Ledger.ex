@@ -1,18 +1,17 @@
 defmodule Ledger do
-  @moduledoc """
-  Documentation for `Tp1`.
-  """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Tp1.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  @csv_path "./data/transacciones.csv"
+  def main(["transacciones"]) do
+    transacciones()
   end
+
+  def transacciones() do
+    File.stream!(@csv_path)
+    |> CSV.decode()
+    |> Enum.each(fn
+      {:ok, fila} -> IO.puts(Enum.join(fila, ";"))
+      {:error, motivo} -> IO.puts("Error: #{motivo}")
+    end
+    )
+  end
+
 end
