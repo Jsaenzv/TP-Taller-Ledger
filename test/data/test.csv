@@ -1,0 +1,6 @@
+id;timestamp;moneda_origen;moneda_destino;monto;cuenta_origen;cuenta_destino;tipo
+12;1757600000;USDT;ETH;50.00;userA;userB;transferencia
+13;1757610000;ETH;USDT;1.25;userL;;swap
+14;1757620000;BTC;;1500.00;userM;;alta_cuenta
+15;1757630000;USDT;BTC;200.00;userA;userC;transferencia
+16;1757640000;BTC;BTC;0.30;userB;userC;transferencia
