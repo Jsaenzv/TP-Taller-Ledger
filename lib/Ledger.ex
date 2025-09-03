@@ -11,6 +11,7 @@ defmodule Ledger do
   ]
   @csv_path "./data/transacciones.csv"
   @delimitador_csv ";"
+  @default_output_path 0
 
   def main(["transacciones" | flags]) do
     params = parsear_flags(flags)
@@ -24,7 +25,9 @@ defmodule Ledger do
     end)
     |> Enum.map(fn {clave, valor} ->
       case {clave, valor} do
+        # Para después filtrar en el map por clave
         {"-c1", valor} -> {"cuenta_origen", valor}
+        # Para después filtrar en el map por clave
         {"-c2", valor} -> {"cuenta_destino", valor}
         {"-t", valor} -> {:t, valor}
         {"-o", valor} -> {:o, valor}
@@ -37,7 +40,9 @@ defmodule Ledger do
 
   def transacciones(params) do
     path = Map.get(params, :t, @csv_path)
-    params_filtrados = Map.delete(params, :t)
+    output_path = Map.get(params, :o, @default_output_path)
+
+    params_filtrados = Map.drop(params, [:t, :o])
 
     filas_sin_filtrar =
       path
@@ -54,9 +59,18 @@ defmodule Ledger do
         end)
       end
 
-    Enum.each(filas_filtradas, fn fila ->
-      valores = Enum.map(@headers, &fila[&1])
-      IO.puts(Enum.join(valores, @delimitador_csv))
-    end)
+    output =
+      filas_filtradas
+      # Aseguro el orden (ya que Map no lo hace)
+      |> Enum.map(fn fila -> Enum.map(@headers, &fila[&1]) end)
+      # Uno cada valor con el delimitador
+      |> Enum.map(fn fila -> Enum.join(fila, @delimitador_csv) end)
+      # Uno cada fila con \n
+      |> Enum.join("\n")
+
+    case output_path do
+      0 -> IO.puts(output)
+      _ -> File.write!(output_path, output)
+    end
   end
 end
