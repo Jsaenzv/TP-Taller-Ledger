@@ -55,9 +55,7 @@ defmodule Ledger do
     end)
     |> Enum.map(fn {clave, valor} ->
       case {clave, valor} do
-        # Para después filtrar en el map por clave
         {"-c1", valor} -> {"cuenta_origen", valor}
-        # Para después filtrar en el map por clave
         {"-c2", valor} -> {"cuenta_destino", valor}
         {"-t", valor} -> {"input_path", valor}
         {"-o", valor} -> {"output_path", valor}
@@ -96,7 +94,6 @@ defmodule Ledger do
       @csv_monedas_path
       |> File.stream!()
       |> CSV.decode!(headers: false, separator: ?;)
-      # Cada fila es ["MONEDA", "VALOR"]. Convertimos a {moneda, rate_float}.
       |> Enum.map(fn [moneda, valor] -> {moneda, parse_float(valor)} end)
       |> Enum.into(%{})
 
@@ -165,27 +162,28 @@ defmodule Ledger do
         balance_final
 
       moneda_destino ->
-        Enum.reduce(balance_final, %{}, fn {moneda_origen, saldo_moneda_origen}, acc ->
-          cambio_moneda_origen = Map.fetch!(tipo_de_cambio, moneda_origen)
-          cambio_moneda_destino = Map.fetch!(tipo_de_cambio, moneda_destino)
+        balance_convertido =
+          Enum.reduce(balance_final, %{}, fn {moneda_origen, saldo_moneda_origen}, acc ->
+            cambio_moneda_origen = Map.fetch!(tipo_de_cambio, moneda_origen)
+            cambio_moneda_destino = Map.fetch!(tipo_de_cambio, moneda_destino)
 
-          monto_destino =
-            if moneda_origen == moneda_destino,
-              do: 0.0,
-              else: cambio_moneda_origen * saldo_moneda_origen / cambio_moneda_destino
+            monto_destino =
+              if moneda_origen == moneda_destino,
+                do: 0.0,
+                else: cambio_moneda_origen * saldo_moneda_origen / cambio_moneda_destino
 
-          Map.update(acc, moneda_destino, monto_destino, fn saldo -> saldo + monto_destino end)
-        end)
+            Map.update(acc, moneda_destino, monto_destino, fn saldo -> saldo + monto_destino end)
+          end)
+          |> IO.inspect(label: "Balance final")
+
+        balance_convertido
     end
   end
 
   defp formattear_transacciones(transacciones) do
     transacciones
-    # Aseguro el orden (ya que Map no lo hace)
     |> Enum.map(fn fila -> Enum.map(@headers, &fila[&1]) end)
-    # Uno cada valor con el delimitador
     |> Enum.map(fn fila -> Enum.join(fila, @delimitador_csv) end)
-    # Uno cada fila con \n
     |> Enum.join("\n")
   end
 
@@ -194,7 +192,6 @@ defmodule Ledger do
     |> Enum.map(fn {moneda, monto} ->
       "#{moneda};#{:erlang.float_to_binary(monto, decimals: 6)}"
     end)
-    # Orden determinístico para facilitar tests reproducibles
     |> Enum.sort()
     |> Enum.join("\n")
   end
