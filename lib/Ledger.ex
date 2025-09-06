@@ -41,15 +41,10 @@ defmodule Ledger do
 
     case output_path do
       @default_output_path ->
-        IO.inspect(formattear_balance(output),
-          label: "Balance",
-          pretty: true,
-          limit: :infinity,
-          width: 0
-        )
+        IO.puts(formattear_balance(output))
 
       _ ->
-        File.write!(output_path, output)
+        File.write!(output_path, formattear_balance(output))
     end
   end
 
@@ -166,17 +161,22 @@ defmodule Ledger do
       end)
 
     case moneda do
-      @default_moneda -> balance_final
+      @default_moneda ->
+        balance_final
+
       moneda_destino ->
-        balance_convertido = Enum.reduce(balance_final, %{},fn ({moneda_origen, saldo_moneda_origen}, acc) ->
+        Enum.reduce(balance_final, %{}, fn {moneda_origen, saldo_moneda_origen}, acc ->
           cambio_moneda_origen = Map.fetch!(tipo_de_cambio, moneda_origen)
           cambio_moneda_destino = Map.fetch!(tipo_de_cambio, moneda_destino)
-          monto_destino = if moneda_origen == moneda_destino, do: 0.0, else: (cambio_moneda_origen * saldo_moneda_origen) / cambio_moneda_destino
-          Map.update(acc, moneda_destino, monto_destino, fn saldo -> saldo + monto_destino end)
-        end) |> IO.inspect(label: "Balance final")
-        balance_convertido
-    end
 
+          monto_destino =
+            if moneda_origen == moneda_destino,
+              do: 0.0,
+              else: cambio_moneda_origen * saldo_moneda_origen / cambio_moneda_destino
+
+          Map.update(acc, moneda_destino, monto_destino, fn saldo -> saldo + monto_destino end)
+        end)
+    end
   end
 
   defp formattear_transacciones(transacciones) do
@@ -190,9 +190,13 @@ defmodule Ledger do
   end
 
   defp formattear_balance(balance) do
-    Enum.map(balance, fn {moneda, monto} ->
-      {moneda, :erlang.float_to_binary(monto, decimals: 6)}
+    balance
+    |> Enum.map(fn {moneda, monto} ->
+      "#{moneda};#{:erlang.float_to_binary(monto, decimals: 6)}"
     end)
+    # Orden determinístico para facilitar tests reproducibles
+    |> Enum.sort()
+    |> Enum.join("\n")
   end
 
   defp parse_float(nil),
