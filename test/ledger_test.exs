@@ -147,6 +147,8 @@ defmodule LedgerTest do
         "-t=#{@transacciones_csv_test_path}"
       ])
 
+    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
+
     esperado = @esperado_balance_userM
 
     output_parseado = parsear_output(output, :map)
@@ -170,6 +172,28 @@ defmodule LedgerTest do
     esperado = @esperado_balance_userM
     assert File.exists?(@output_path), "El programa no creo ningún archivo en el output esperado"
     output = File.read!(@output_path)
+    output_parseado = parsear_output(output, :map)
+
+    assert output_parseado == esperado
+  end
+
+  @esperado_balance_userC_convertido_USDT %{"USDT" => 19700.00}
+  test "ledger balance con conversión de moneda" do
+    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
+    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
+
+    {output, status} =
+      System.cmd(@ejecutable_path, [
+        "balance",
+        "-c1=userC",
+        "-t=#{@transacciones_csv_test_path}",
+        "-m=USDT"
+      ])
+
+    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
+
+    esperado = @esperado_balance_userC_convertido_USDT
+
     output_parseado = parsear_output(output, :map)
 
     assert output_parseado == esperado

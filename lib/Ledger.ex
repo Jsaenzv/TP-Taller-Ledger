@@ -174,7 +174,6 @@ defmodule Ledger do
 
             Map.update(acc, moneda_destino, monto_destino, fn saldo -> saldo + monto_destino end)
           end)
-          |> IO.inspect(label: "Balance final")
 
         balance_convertido
     end
