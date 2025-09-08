@@ -124,9 +124,9 @@ defmodule LedgerTest do
       output
       |> String.trim()
       |> String.split("\n", trim: true)
-      |> Enum.map(fn line ->
-        [k, v] = String.split(line, ";")
-        {k, String.to_float(v)}
+      |> Enum.map(fn fila ->
+        [moneda, monto] = String.split(fila, ";")
+        {moneda, String.to_float(monto)}
       end)
       |> Map.new()
 
