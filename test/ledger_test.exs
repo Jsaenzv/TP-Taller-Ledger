@@ -5,9 +5,9 @@ defmodule LedgerTest do
   @ejecutable_path Path.join(File.cwd!(), "ledger")
   @default_csv_path "./data/transacciones.csv"
   @transacciones_csv_test_path "./test/data/transacciones_test.csv"
-  @transacciones_csv_test_data "id;timestamp;moneda_origen;moneda_destino;monto;cuenta_origen;cuenta_destino;tipo\n12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n13;1757620000;ETH;USDT;1.25;userL;;swap\n14;1757630000;BTC;;15.00;userM;;alta_cuenta\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia\n16;1757650000;BTC;BTC;0.30;userB;userC;transferencia\n17;1757660000;USDT;USDT;200.00;userL;userM;transferencia"
+  @transacciones_csv_test_data "id;timestamp;moneda_origen;moneda_destino;monto;cuenta_origen;cuenta_destino;tipo\n1;1757610001;USDT;;400.00;userA;;alta_cuenta\n2;1757610002;BTC;;1;userB;;alta_cuenta\n3;1757610003;ETH;;1.25;userL;;alta_cuenta\n4;1757630004;BTC;;15.00;userM;;alta_cuenta\n14;1757630000;ETH;;3.00;userC;;alta_cuenta\n12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n13;1757620000;ETH;USDT;1.25;userL;;swap\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia\n16;1757650000;BTC;BTC;0.30;userB;userC;transferencia\n17;1757660000;USDT;USDT;200.00;userL;userM;transferencia"
   @delimitador_csv ";"
-  @output_esperado_sin_flags "12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n13;1757620000;ETH;USDT;1.25;userL;;swap\n14;1757630000;BTC;;15.00;userM;;alta_cuenta\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia\n16;1757650000;BTC;BTC;0.30;userB;userC;transferencia\n17;1757660000;USDT;USDT;200.00;userL;userM;transferencia"
+  @output_esperado_sin_flags "1;1757610001;USDT;;400.00;userA;;alta_cuenta\n2;1757610002;BTC;;1;userB;;alta_cuenta\n3;1757610003;ETH;;1.25;userL;;alta_cuenta\n4;1757630004;BTC;;15.00;userM;;alta_cuenta\n14;1757630000;ETH;;3.00;userC;;alta_cuenta\n12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n13;1757620000;ETH;USDT;1.25;userL;;swap\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia\n16;1757650000;BTC;BTC;0.30;userB;userC;transferencia\n17;1757660000;USDT;USDT;200.00;userL;userM;transferencia"
   @output_path "./test/output.csv"
 
   def parsear_output(output, tipo_de_dato) do
@@ -61,7 +61,7 @@ defmodule LedgerTest do
     assert output_parseado == esperado
   end
 
-  @esperado_userA "12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia"
+  @esperado_userA "1;1757610001;USDT;;400.00;userA;;alta_cuenta\n12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia"
   test "ledger transacciones con cuenta origen" do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
@@ -177,7 +177,7 @@ defmodule LedgerTest do
     assert output_parseado == esperado
   end
 
-  @esperado_balance_userC_convertido_USDT %{"USDT" => 19700.00}
+  @esperado_balance_userC_convertido_USDT %{"USDT" => 29900.00}
   test "ledger balance con conversión de moneda" do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
