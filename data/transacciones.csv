@@ -42,7 +42,7 @@ id;timestamp;moneda_origen;moneda_destino;monto;cuenta_origen;cuenta_destino;tip
 40;1757300000;ETH;USDT;1.0;userH;;swap
 41;1757400000;USDT;;500.00;userI;;alta_cuenta
 42;1757500000;BTC;BTC;0.2;userJ;userK;transferencia
-43;1757500001;BTC;BTC;0.5;userJ;userK;transferencia
+43;1757500001;BTC;BTC;0.4;userJ;userK;transferencia
 44;1757500011;USDT;BTC;300;userA;;swap
 45;1757500050;ETH;;5.00;userL;;alta_cuenta
 46;1757500120;ETH;USDT;0.75;userL;userM;transferencia
