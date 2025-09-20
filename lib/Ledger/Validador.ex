@@ -62,7 +62,7 @@ defmodule Ledger.Validador do
 
             {:ok, %{estado_actual | balances: balances_nuevos}}
           else
-            {:error, razon} -> {:error, "Error en la línea #{linea}, razon: #{razon}"}
+            {:error, razon} -> {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
           end
 
         "swap" ->
@@ -80,11 +80,11 @@ defmodule Ledger.Validador do
 
             {:ok, %{estado_actual | balances: balances_nuevos}}
           else
-            {:error, razon} -> {:error, "Error en la línea #{linea}, razon: #{razon}"}
+            {:error, razon} -> {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
           end
       end
     else
-      {:error, razon} -> {:error, "Error en la línea #{linea}, razon: #{razon}"}
+      {:error, razon} -> {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
     end
   end
 
