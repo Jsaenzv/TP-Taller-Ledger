@@ -2,6 +2,32 @@ defmodule Ledger.Validador do
   alias Ledger.Parser
   alias Ledger.Constantes
 
+  def validar_flags(flags, comando) do
+    case comando do
+      :balance ->
+        with {:ok, _cuenta_origen} <- campo_obligatorio(flags, "cuenta_origen"),
+             :ok <- campo_vacio(flags, "cuenta_destino") do
+          :ok
+        else
+          {:error, razon} -> {:error, razon}
+        end
+
+      :transacciones ->
+        with :ok <- campo_vacio(flags, "moneda") do
+          :ok
+        else
+          {:error, razon} -> {:error, razon}
+        end
+    end
+  end
+
+  defp campo_vacio(mapa, campo) do
+    case Map.get(mapa, campo) do
+      nil -> :ok
+      _ -> {:error, "Campo #{campo} debe estar vacío."}
+    end
+  end
+
   def validar_transacciones(transacciones, tipos_de_cambio) do
     estado_inicial = %{cuentas_alta: MapSet.new(), balances: %{}, tipos: tipos_de_cambio}
 
@@ -62,7 +88,8 @@ defmodule Ledger.Validador do
 
             {:ok, %{estado_actual | balances: balances_nuevos}}
           else
-            {:error, razon} -> {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
+            {:error, razon} ->
+              {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
           end
 
         "swap" ->
@@ -80,11 +107,13 @@ defmodule Ledger.Validador do
 
             {:ok, %{estado_actual | balances: balances_nuevos}}
           else
-            {:error, razon} -> {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
+            {:error, razon} ->
+              {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
           end
       end
     else
-      {:error, razon} -> {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
+      {:error, razon} ->
+        {:error, "Error en la línea #{linea} (sin contar encabezados), razon: #{razon}"}
     end
   end
 
@@ -95,8 +124,8 @@ defmodule Ledger.Validador do
     end
   end
 
-  def campo_obligatorio(fila, campo) do
-    case fila[campo] do
+  def campo_obligatorio(mapa, campo) do
+    case mapa[campo] do
       nil -> {:error, "Campo obligatorio faltante: #{campo}"}
       "" -> {:error, "Campo obligatorio vacío: #{campo}"}
       v -> {:ok, v}

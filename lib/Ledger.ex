@@ -8,6 +8,11 @@ defmodule Ledger do
   def main(["transacciones" | flags]) do
     params = Parser.parsear_flags(flags)
 
+    case Validador.validar_flags(params, :transacciones) do
+      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+      _ -> nil
+    end
+
     output_path = Map.get(params, "output_path", Constantes.default_output_path())
     input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
 
@@ -24,6 +29,11 @@ defmodule Ledger do
 
   def main(["balance" | flags]) do
     params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, :balance) do
+      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+      _ -> nil
+    end
 
     output_path = Map.get(params, "output_path", Constantes.default_output_path())
     input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
