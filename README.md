@@ -16,7 +16,7 @@ El ejecutable del proyecto es `ledger` (escript). El código principal está en 
 
 ---
 
-## Uso Rápido
+## Uso
 
 1) Instalar dependencias y compilar el escript:
 
