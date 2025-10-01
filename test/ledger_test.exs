@@ -1,5 +1,6 @@
 defmodule LedgerTest do
   use ExUnit.Case
+  import ExUnit.CaptureIO
   doctest Ledger
 
   @ejecutable_path Path.join(File.cwd!(), "ledger")
@@ -36,11 +37,12 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {output, status} =
-      System.cmd(@ejecutable_path, ["transacciones", "-t=#{@transacciones_csv_test_path}"])
+    output =
+      capture_io(fn ->
+        assert :ok == Ledger.main(["transacciones", "-t=#{@transacciones_csv_test_path}"])
+      end)
 
     output_parseado = parsear_output(output, :string)
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
     esperado = @output_esperado_sin_flags
     # trim_trailing elimina "\n" del final si es que esta, caso contrario devuelve el mismo string
     assert output_parseado == esperado
@@ -54,10 +56,12 @@ defmodule LedgerTest do
       |> Stream.drop(1)
       |> Enum.map_join("\n", fn fila -> Enum.join(fila, @delimitador_csv) end)
 
-    {output, status} = System.cmd(@ejecutable_path, ["transacciones"])
+    output =
+      capture_io(fn ->
+        assert :ok == Ledger.main(["transacciones"])
+      end)
 
     output_parseado = parsear_output(output, :string)
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
     assert output_parseado == esperado
   end
 
@@ -66,15 +70,17 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {output, status} =
-      System.cmd(@ejecutable_path, [
-        "transacciones",
-        "-t=#{@transacciones_csv_test_path}",
-        "-c1=userA"
-      ])
+    output =
+      capture_io(fn ->
+        assert :ok ==
+                 Ledger.main([
+                   "transacciones",
+                   "-t=#{@transacciones_csv_test_path}",
+                   "-c1=userA"
+                 ])
+      end)
 
     output_parseado = parsear_output(output, :string)
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
     esperado = @esperado_userA
     assert output_parseado == esperado
   end
@@ -84,16 +90,18 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {output, status} =
-      System.cmd(@ejecutable_path, [
-        "transacciones",
-        "-t=#{@transacciones_csv_test_path}",
-        "-c1=userA",
-        "-c2=userB"
-      ])
+    output =
+      capture_io(fn ->
+        assert :ok ==
+                 Ledger.main([
+                   "transacciones",
+                   "-t=#{@transacciones_csv_test_path}",
+                   "-c1=userA",
+                   "-c2=userB"
+                 ])
+      end)
 
     output_parseado = parsear_output(output, :string)
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
     esperado = @esperado_userA_to_userB
     assert output_parseado == esperado
   end
@@ -103,15 +111,17 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {output, status} =
-      System.cmd(@ejecutable_path, [
-        "transacciones",
-        "-t=#{@transacciones_csv_test_path}",
-        "-c2=userC"
-      ])
+    output =
+      capture_io(fn ->
+        assert :ok ==
+                 Ledger.main([
+                   "transacciones",
+                   "-t=#{@transacciones_csv_test_path}",
+                   "-c2=userC"
+                 ])
+      end)
 
     output_parseado = parsear_output(output, :string)
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
     esperado = @esperado_cualquiera_to_userC
     assert output_parseado == esperado
   end
@@ -120,14 +130,15 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {_output, status} =
-      System.cmd(@ejecutable_path, [
-        "transacciones",
-        "-t=#{@transacciones_csv_test_path}",
-        "-o=#{@output_path}"
-      ])
+    capture_io(fn ->
+      assert :ok ==
+               Ledger.main([
+                 "transacciones",
+                 "-t=#{@transacciones_csv_test_path}",
+                 "-o=#{@output_path}"
+               ])
+    end)
 
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
     esperado = @output_esperado_sin_flags
     assert File.exists?(@output_path), "El programa no creo ningún archivo en el output esperado"
     output = File.read!(@output_path)
@@ -140,14 +151,15 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {output, status} =
-      System.cmd(@ejecutable_path, [
-        "balance",
-        "-c1=userM",
-        "-t=#{@transacciones_csv_test_path}"
-      ])
-
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
+    output =
+      capture_io(fn ->
+        assert :ok ==
+                 Ledger.main([
+                   "balance",
+                   "-c1=userM",
+                   "-t=#{@transacciones_csv_test_path}"
+                 ])
+      end)
 
     esperado = @esperado_balance_userM
 
@@ -160,15 +172,16 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {_output, status} =
-      System.cmd(@ejecutable_path, [
-        "balance",
-        "-c1=userM",
-        "-t=#{@transacciones_csv_test_path}",
-        "-o=#{@output_path}"
-      ])
+    capture_io(fn ->
+      assert :ok ==
+               Ledger.main([
+                 "balance",
+                 "-c1=userM",
+                 "-t=#{@transacciones_csv_test_path}",
+                 "-o=#{@output_path}"
+               ])
+    end)
 
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
     esperado = @esperado_balance_userM
     assert File.exists?(@output_path), "El programa no creo ningún archivo en el output esperado"
     output = File.read!(@output_path)
@@ -182,15 +195,16 @@ defmodule LedgerTest do
     assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
     File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
 
-    {output, status} =
-      System.cmd(@ejecutable_path, [
-        "balance",
-        "-c1=userC",
-        "-t=#{@transacciones_csv_test_path}",
-        "-m=USDT"
-      ])
-
-    assert status == 0, "El exit code de ejecutar el programa no fue exitoso."
+    output =
+      capture_io(fn ->
+        assert :ok ==
+                 Ledger.main([
+                   "balance",
+                   "-c1=userC",
+                   "-t=#{@transacciones_csv_test_path}",
+                   "-m=USDT"
+                 ])
+      end)
 
     esperado = @esperado_balance_userC_convertido_USDT
 
