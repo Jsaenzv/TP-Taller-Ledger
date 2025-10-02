@@ -3,8 +3,8 @@ defmodule Ledger.Entidades.Usuario do
   import Ecto.Changeset
 
   schema "users" do
-    field :nombre, :string
-    field :fecha_nacimiento, :date
+    field(:nombre, :string)
+    field(:fecha_nacimiento, :date)
     timestamps()
   end
 
