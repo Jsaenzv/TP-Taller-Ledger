@@ -168,6 +168,56 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert %{cuenta_origen: ["Este campo es obligatorio"]} == errores_en(changeset)
     end
 
+    test "devuelve un error porque falta moneda_destino y el tipo es transferencia" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 110.5,
+        tipo: "transferencia",
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: nil,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: cuenta_destino.id
+      }
+      changeset = Transaccion.changeset(%Transaccion{}, atributos)
+
+      refute changeset.valid?
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{moneda_destino_id: ["Este campo es obligatorio en caso de transferencia"]} == errores_en(changeset)
+    end
+
+    test "devuelve un error porque falta cuenta_destino y el tipo es transferencia" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 110.5,
+        tipo: "transferencia",
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: nil
+      }
+      changeset = Transaccion.changeset(%Transaccion{}, atributos)
+
+      refute changeset.valid?
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+
+      assert %{cuenta_destino: ["Este campo es obligatorio en caso de transferencia"]} == errores_en(changeset)
+    end
+
     test "devuelve un error porque el monto es negativo" , %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
