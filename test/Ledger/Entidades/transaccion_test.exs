@@ -38,6 +38,8 @@ defmodule Ledger.Entidades.TransaccionTest do
   end
 
   describe "changeset/2" do
+    @monto_default 100.5
+    @tipo_default "transferencia"
     test "devuelve un changeset válido cuando los atributos están completos", %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
@@ -45,8 +47,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       cuenta_destino: cuenta_destino
     } do
       atributos = %{
-        monto: 125.5,
-        tipo: "transferencia",
+        monto: @monto_default,
+        tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
         cuenta_origen: cuenta_origen.id,
@@ -57,7 +59,7 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert changeset.valid?
 
-      assert %{monto: 125.5, tipo: "transferencia"} = changeset.changes
+      assert %{monto: 125.5, tipo: @tipo_default} = changeset.changes
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
       assert changeset.changes.cuenta_origen == cuenta_origen.id
@@ -74,7 +76,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     } do
       atributos = %{
         monto: nil,
-        tipo: "transferencia",
+        tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
         cuenta_origen: cuenta_origen.id,
@@ -126,7 +128,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     } do
       atributos = %{
         monto: 110.5,
-        tipo: "transferencia",
+        tipo: @tipo_default,
         moneda_origen_id: nil,
         moneda_destino_id: moneda_destino.id,
         cuenta_origen: cuenta_origen.id,
@@ -151,7 +153,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     } do
       atributos = %{
         monto: 110.5,
-        tipo: "transferencia",
+        tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
         cuenta_origen: nil,
@@ -176,7 +178,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     } do
       atributos = %{
         monto: 110.5,
-        tipo: "transferencia",
+        tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: nil,
         cuenta_origen: cuenta_origen.id,
@@ -201,7 +203,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     } do
       atributos = %{
         monto: 110.5,
-        tipo: "transferencia",
+        tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
         cuenta_origen: cuenta_origen.id,
@@ -218,6 +220,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert %{cuenta_destino: ["Este campo es obligatorio en caso de transferencia"]} == errores_en(changeset)
     end
 
+    @monto_negativo -1
     test "devuelve un error porque el monto es negativo" , %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
@@ -225,8 +228,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       cuenta_destino: cuenta_destino
     } do
       atributos = %{
-        monto: -1,
-        tipo: "transferencia",
+        monto: @monto_negativo,
+        tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
         cuenta_origen: cuenta_origen.id,
@@ -244,7 +247,29 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert %{monto: ["Debe ser mayor a cero"]} == errores_en(changeset)
     end
 
-    # test: Monto negativo o cero → validate_number debería marcar error.
+    @moneda_origen_id_inexistente 1000000
+    test "devuelve error porque la moneda_origen no existe en la tabla Monedas" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 100,
+        tipo: @tipo_default,
+        moneda_origen_id: @moneda_origen_id_inexistente,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: cuenta_destino.id
+      }
+      {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
+
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{moneda_origen: ["Debe existir en la tabla Monedas"]} == errores_en(changeset)
+    end
     # test: Referencia a moneda/cuenta inexistente → tras intentar Repo.insert, deberías obtener un error de constraint (requiere fixtures/mocks para monedas y usuarios creados de antemano o uso de sandbox).
   end
 
