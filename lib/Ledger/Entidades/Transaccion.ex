@@ -39,7 +39,7 @@ defmodule Ledger.Entidades.Transaccion do
       :cuenta_origen,
       :cuenta_destino
     ])
-    |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen])
+    |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen], message: "Este campo es obligatorio")
     |> validate_number(:monto, greater_than: 0)
     |> assoc_constraint(:moneda_origen)
     |> assoc_constraint(:moneda_destino)
@@ -62,7 +62,7 @@ defmodule Ledger.Entidades.Transaccion do
         :cuenta_destino,
         :deshacer_de_id
       ])
-      |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen, :deshacer_de_id])
+      |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen, :deshacer_de_id], message: "Este campo es obligatorio")
       |> validate_change(:deshacer_de_id, fn :deshacer_de_id, value ->
         if value == original.id do
           []
