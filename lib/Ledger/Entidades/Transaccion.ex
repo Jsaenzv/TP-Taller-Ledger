@@ -48,7 +48,6 @@ defmodule Ledger.Entidades.Transaccion do
     |> assoc_constraint(:moneda_destino, message: "Debe existir en la tabla Monedas")
     |> assoc_constraint(:cuenta_origen_usuario, message: "Debe existir en la tabla Usuarios")
     |> assoc_constraint(:cuenta_destino_usuario, message: "Debe existir en la tabla Usuarios")
-  end
 end
 
 defp validar_destinos_si_transferencia(changeset) do
