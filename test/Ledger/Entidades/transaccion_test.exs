@@ -37,7 +37,7 @@ defmodule Ledger.Entidades.TransaccionTest do
      cuenta_destino: cuenta_destino}
   end
 
-  describe "changeset válido" do
+  describe "changeset/2" do
     test "devuelve un changeset válido cuando los atributos están completos", %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
@@ -91,7 +91,109 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert %{monto: ["Este campo es obligatorio"]} == errores_en(changeset)
     end
-    # test: Validaciones mínimas: faltan :monto, :tipo, :moneda_origen_id o :cuenta_origen → el changeset debe ser inválido y contener los errores esperados.
+
+    test "devuelve un error porque falta tipo" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 110.5,
+        tipo: nil,
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: cuenta_destino.id
+      }
+      changeset = Transaccion.changeset(%Transaccion{}, atributos)
+
+      refute changeset.valid?
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{tipo: ["Este campo es obligatorio"]} == errores_en(changeset)
+    end
+
+    test "devuelve un error porque falta moneda_origen_id" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 110.5,
+        tipo: "transferencia",
+        moneda_origen_id: nil,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: cuenta_destino.id
+      }
+      changeset = Transaccion.changeset(%Transaccion{}, atributos)
+
+      refute changeset.valid?
+
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{moneda_origen_id: ["Este campo es obligatorio"]} == errores_en(changeset)
+    end
+
+    test "devuelve un error porque falta cuenta_origen" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 110.5,
+        tipo: "transferencia",
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: nil,
+        cuenta_destino: cuenta_destino.id
+      }
+      changeset = Transaccion.changeset(%Transaccion{}, atributos)
+
+      refute changeset.valid?
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{cuenta_origen: ["Este campo es obligatorio"]} == errores_en(changeset)
+    end
+
+    test "devuelve un error porque el monto es negativo" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: -1,
+        tipo: "transferencia",
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: cuenta_destino.id
+      }
+      changeset = Transaccion.changeset(%Transaccion{}, atributos)
+
+      refute changeset.valid?
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{monto: ["Debe ser mayor a cero"]} == errores_en(changeset)
+    end
+
     # test: Monto negativo o cero → validate_number debería marcar error.
     # test: Referencia a moneda/cuenta inexistente → tras intentar Repo.insert, deberías obtener un error de constraint (requiere fixtures/mocks para monedas y usuarios creados de antemano o uso de sandbox).
   end
