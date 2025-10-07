@@ -54,7 +54,7 @@ defp validar_destinos_si_transferencia(changeset) do
   case get_field(changeset, :tipo) do
     "transferencia" ->
       validate_required(changeset, [:moneda_destino_id, :cuenta_destino],
-        message: "Este campo es obligatorio"
+        message: "Este campo es obligatorio en caso de transferencia"
       )
 
     _ ->
