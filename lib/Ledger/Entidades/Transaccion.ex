@@ -40,7 +40,7 @@ defmodule Ledger.Entidades.Transaccion do
       :cuenta_destino
     ])
     |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen], message: "Este campo es obligatorio")
-    |> validate_number(:monto, greater_than: 0)
+    |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
     |> assoc_constraint(:moneda_origen)
     |> assoc_constraint(:moneda_destino)
     |> assoc_constraint(:cuenta_origen_usuario)
@@ -70,7 +70,7 @@ defmodule Ledger.Entidades.Transaccion do
           [deshacer_de_id: "no coincide con la transacción original"]
         end
       end)
-      |> validate_number(:monto, greater_than: 0)
+      |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
       |> assoc_constraint(:moneda_origen)
       |> assoc_constraint(:moneda_destino)
       |> assoc_constraint(:cuenta_origen_usuario)
