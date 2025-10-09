@@ -121,7 +121,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     end
 
     test "devuelve un error porque falta moneda_origen_id" , %{
-      moneda_origen: moneda_origen,
+      moneda_origen: _moneda_origen,
       moneda_destino: moneda_destino,
       cuenta_origen: cuenta_origen,
       cuenta_destino: cuenta_destino
@@ -148,7 +148,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     test "devuelve un error porque falta cuenta_origen" , %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
-      cuenta_origen: cuenta_origen,
+      cuenta_origen: _cuenta_origen,
       cuenta_destino: cuenta_destino
     } do
       atributos = %{
@@ -172,7 +172,7 @@ defmodule Ledger.Entidades.TransaccionTest do
 
     test "devuelve un error porque falta moneda_destino y el tipo es transferencia" , %{
       moneda_origen: moneda_origen,
-      moneda_destino: moneda_destino,
+      moneda_destino: _moneda_destino,
       cuenta_origen: cuenta_origen,
       cuenta_destino: cuenta_destino
     } do
@@ -199,7 +199,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
       cuenta_origen: cuenta_origen,
-      cuenta_destino: cuenta_destino
+      cuenta_destino: _cuenta_destino
     } do
       atributos = %{
         monto: 110.5,
@@ -249,7 +249,7 @@ defmodule Ledger.Entidades.TransaccionTest do
 
     @moneda_origen_id_inexistente 1000000
     test "devuelve error porque la moneda_origen no existe en la tabla Monedas" , %{
-      moneda_origen: moneda_origen,
+      moneda_origen: _moneda_origen,
       moneda_destino: moneda_destino,
       cuenta_origen: cuenta_origen,
       cuenta_destino: cuenta_destino
@@ -274,7 +274,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     @moneda_destino_id_inexistente 1000000
     test "devuelve error porque la moneda_destino no existe en la tabla Monedas" , %{
       moneda_origen: moneda_origen,
-      moneda_destino: moneda_destino,
+      moneda_destino: _moneda_destino,
       cuenta_origen: cuenta_origen,
       cuenta_destino: cuenta_destino
     } do
@@ -299,7 +299,7 @@ defmodule Ledger.Entidades.TransaccionTest do
     test "devuelve error porque la cuenta origen no existe en la tabla Usuarios" , %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
-      cuenta_origen: cuenta_origen,
+      cuenta_origen: _cuenta_origen,
       cuenta_destino: cuenta_destino
     } do
       atributos = %{
@@ -324,7 +324,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
       cuenta_origen: cuenta_origen,
-      cuenta_destino: cuenta_destino
+      cuenta_destino: _cuenta_destino
     } do
       atributos = %{
         monto: 100,
@@ -394,7 +394,7 @@ defmodule Ledger.Entidades.TransaccionTest do
         })
         |> Repo.insert!()
 
-        transaccion_2 = %Transaccion{}
+        _transaccion_2 = %Transaccion{}
         |> Transaccion.changeset(%{
           monto: @monto_default,
           tipo: @tipo_default,
@@ -410,7 +410,6 @@ defmodule Ledger.Entidades.TransaccionTest do
         refute changeset.valid?
         assert %{base: ["solo se puede deshacer la última transacción de cada cuenta involucrada"]} == errores_en(changeset)
     end
-    # test: No es la última transacción: insertar dos transacciones para la misma cuenta en orden cronológico y llamar a reversal_changeset con la primera; debería devolver error en :base.
     # test: Transacción sin cuenta destino: crear una transacción con cuenta_destino nil y confirmar que la reversión mantiene esa ausencia coherentemente.
   end
 
