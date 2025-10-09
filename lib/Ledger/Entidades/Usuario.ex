@@ -22,6 +22,6 @@ defmodule Ledger.Entidades.Usuario do
       [fecha_nacimiento: "El usuario debe ser mayor de #{@edad_minima} años"]
     end
   end)
-  |> unique_constraint([:nombre], message: "Ya existe un usuario con ese nombre")
+  |> unique_constraint([:nombre], name: :users_nombre_index, message: "Ya existe un usuario con ese nombre")
 end
 end
