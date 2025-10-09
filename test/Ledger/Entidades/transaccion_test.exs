@@ -59,7 +59,7 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert changeset.valid?
 
-      assert %{monto: 125.5, tipo: @tipo_default} = changeset.changes
+      assert %{monto: @monto_default, tipo: @tipo_default} = changeset.changes
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
       assert changeset.changes.cuenta_origen == cuenta_origen.id
@@ -270,11 +270,146 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert %{moneda_origen: ["Debe existir en la tabla Monedas"]} == errores_en(changeset)
     end
-    # test: Referencia a moneda/cuenta inexistente → tras intentar Repo.insert, deberías obtener un error de constraint (requiere fixtures/mocks para monedas y usuarios creados de antemano o uso de sandbox).
+
+    @moneda_destino_id_inexistente 1000000
+    test "devuelve error porque la moneda_destino no existe en la tabla Monedas" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 100,
+        tipo: @tipo_default,
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: @moneda_destino_id_inexistente,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: cuenta_destino.id
+      }
+      {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{moneda_destino: ["Debe existir en la tabla Monedas"]} == errores_en(changeset)
+    end
+
+    @cuenta_origen_inexistente 1000000
+    test "devuelve error porque la cuenta origen no existe en la tabla Usuarios" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 100,
+        tipo: @tipo_default,
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: @cuenta_origen_inexistente,
+        cuenta_destino: cuenta_destino.id
+      }
+      {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+      assert changeset.changes.cuenta_destino == cuenta_destino.id
+
+      assert %{cuenta_origen_usuario: ["Debe existir en la tabla Usuarios"]} == errores_en(changeset)
+    end
+
+    @cuenta_destino_inexistente 1000000
+    test "devuelve error porque la cuenta destino no existe en la tabla Usuarios" , %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      atributos = %{
+        monto: 100,
+        tipo: @tipo_default,
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: cuenta_origen.id,
+        cuenta_destino: @cuenta_destino_inexistente
+      }
+      {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
+
+      assert changeset.changes.moneda_origen_id == moneda_origen.id
+      assert changeset.changes.moneda_destino_id == moneda_destino.id
+      assert changeset.changes.cuenta_origen == cuenta_origen.id
+
+      assert %{cuenta_destino_usuario: ["Debe existir en la tabla Usuarios"]} == errores_en(changeset)
+    end
   end
 
+
+
   describe "reversal_changeset/2" do
-    # test: Caso feliz: crear una transacción, luego pasarla a reversal_changeset y verificar que el changeset resultante sea válido y que los campos estén correctamente invertidos.
+    test "devuelve un changeset válido con los campos invertidos", %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+    } do
+      transaccion =
+        %Transaccion{}
+        |> Transaccion.changeset(%{
+          monto: @monto_default,
+          tipo: @tipo_default,
+          moneda_origen_id: moneda_origen.id,
+          moneda_destino_id: moneda_destino.id,
+          cuenta_origen: cuenta_origen.id,
+          cuenta_destino: cuenta_destino.id
+        })
+        |> Repo.insert!()
+
+      changeset = Transaccion.reversal_changeset(transaccion)
+
+      assert changeset.valid?
+      assert changeset.changes.tipo == "reversa"
+      assert changeset.changes.monto == transaccion.monto
+      assert changeset.changes.moneda_origen_id == transaccion.moneda_destino_id
+      assert changeset.changes.moneda_destino_id == transaccion.moneda_origen_id
+      assert changeset.changes.cuenta_origen == transaccion.cuenta_destino
+      assert changeset.changes.cuenta_destino == transaccion.cuenta_origen
+      assert changeset.changes.deshacer_de_id == transaccion.id
+    end
+
+    test "Error al intentar revertir una transacción que no es la ultima", %{
+      moneda_origen: moneda_origen,
+      moneda_destino: moneda_destino,
+      cuenta_origen: cuenta_origen,
+      cuenta_destino: cuenta_destino
+      } do
+        transaccion_1 = %Transaccion{}
+        |> Transaccion.changeset(%{
+          monto: @monto_default,
+          tipo: @tipo_default,
+          moneda_origen_id: moneda_origen.id,
+          moneda_destino_id: moneda_destino.id,
+          cuenta_origen: cuenta_origen.id,
+          cuenta_destino: cuenta_destino.id
+        })
+        |> Repo.insert!()
+
+        transaccion_2 = %Transaccion{}
+        |> Transaccion.changeset(%{
+          monto: @monto_default,
+          tipo: @tipo_default,
+          moneda_origen_id: moneda_origen.id,
+          moneda_destino_id: moneda_destino.id,
+          cuenta_origen: cuenta_origen.id,
+          cuenta_destino: cuenta_destino.id
+        })
+        |> Repo.insert!()
+
+        changeset = Transaccion.reversal_changeset(transaccion_1)
+
+        refute changeset.valid?
+        assert %{base: ["solo se puede deshacer la última transacción de cada cuenta involucrada"]} == errores_en(changeset)
+    end
     # test: No es la última transacción: insertar dos transacciones para la misma cuenta en orden cronológico y llamar a reversal_changeset con la primera; debería devolver error en :base.
     # test: Transacción sin cuenta destino: crear una transacción con cuenta_destino nil y confirmar que la reversión mantiene esa ausencia coherentemente.
   end
