@@ -43,7 +43,7 @@ defmodule Ledger.Entidades.Transaccion do
          message: "Este campo es obligatorio"
        )
     |> validar_destinos_si_transferencia()
-    |> validate_number(:monto, greater_than: 0)
+    |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
     |> assoc_constraint(:moneda_origen, message: "Debe existir en la tabla Monedas")
     |> assoc_constraint(:moneda_destino, message: "Debe existir en la tabla Monedas")
     |> assoc_constraint(:cuenta_origen_usuario, message: "Debe existir en la tabla Usuarios")
