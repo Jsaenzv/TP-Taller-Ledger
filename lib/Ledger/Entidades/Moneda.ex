@@ -11,10 +11,10 @@ defmodule Ledger.Entidades.Moneda do
   def changeset(moneda, atributos) do
     moneda
     |> cast(atributos, [:nombre, :precio_en_dolares])
-    |> validate_required([:nombre, :precio_en_dolares])
-    |> unique_constraint([:nombre])
-    |> validate_length(:nombre, min: 3, max: 4)
-    |> validate_format(:nombre, ~r/^[A-Z]+$/)
+    |> validate_required([:nombre, :precio_en_dolares], message: "Este campo es obligatorio")
+    |> unique_constraint([:nombre], message: "Ya existe una moneda con ese nombre")
+    |> validate_length(:nombre, min: 3, max: 4, message: "El nombre debe tener 3 o 4 caracteres")
+    |> validate_format(:nombre, ~r/^[A-Z]+$/, message: "Formato inválido")
     |> prohibir_modificacion_nombre()
   end
 
