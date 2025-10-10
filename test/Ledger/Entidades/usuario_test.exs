@@ -1,7 +1,7 @@
 defmodule Ledger.Entidades.UsuarioTest do
   use ExUnit.Case, async: false
 
-  alias Ledger.Entidades.{Moneda, Transaccion, Usuario}
+  alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB}
   alias Ledger.Repo
 
   import Ecto.Changeset
@@ -26,7 +26,7 @@ defmodule Ledger.Entidades.UsuarioTest do
       assert changeset.valid?
       assert changeset.changes.nombre == usuario.nombre
       assert changeset.changes.fecha_nacimiento == usuario.fecha_nacimiento
-      assert %{} == errores_en(changeset)
+      assert %{} == FuncionesDB.errores_en(changeset)
     end
   end
 
@@ -34,14 +34,14 @@ defmodule Ledger.Entidades.UsuarioTest do
     atributos = %{nombre: nil, fecha_nacimiento: usuario.fecha_nacimiento}
     changeset = Usuario.changeset(%Usuario{}, atributos)
     refute changeset.valid?
-    assert %{nombre: ["Este campo es obligatorio"]} == errores_en(changeset)
+    assert %{nombre: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
   end
 
   test "Ingreso usuario sin fecha de nacimiento", %{usuario: usuario} do
     atributos = %{nombre: usuario.nombre, fecha_nacimiento: nil}
     changeset = Usuario.changeset(%Usuario{}, atributos)
     refute changeset.valid?
-    assert %{fecha_nacimiento: ["Este campo es obligatorio"]} == errores_en(changeset)
+    assert %{fecha_nacimiento: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
   end
 
   @fecha_de_nacimiento_invalida ~D[2010-01-01]
@@ -49,7 +49,7 @@ defmodule Ledger.Entidades.UsuarioTest do
     atributos = %{nombre: usuario.nombre, fecha_nacimiento: @fecha_de_nacimiento_invalida}
     changeset = Usuario.changeset(%Usuario{}, atributos)
     refute changeset.valid?
-    assert %{fecha_nacimiento: ["El usuario debe ser mayor de 18 años"]} == errores_en(changeset)
+    assert %{fecha_nacimiento: ["El usuario debe ser mayor de 18 años"]} == FuncionesDB.errores_en(changeset)
   end
 
   @nombre_para_test "pepito"
@@ -58,14 +58,7 @@ defmodule Ledger.Entidades.UsuarioTest do
     _usuario1 = Usuario.changeset(%Usuario{}, atributos) |> Repo.insert!()
     {:error, changeset} = Usuario.changeset(%Usuario{}, atributos) |> Repo.insert()
     refute changeset.valid?
-    assert %{nombre: ["Ya existe un usuario con ese nombre"]} == errores_en(changeset)
+    assert %{nombre: ["Ya existe un usuario con ese nombre"]} == FuncionesDB.errores_en(changeset)
   end
 
-  defp errores_en(changeset) do
-    traverse_errors(changeset, fn {mensaje, opciones} ->
-      Enum.reduce(opciones, mensaje, fn {clave, valor}, acumulado ->
-        String.replace(acumulado, "%{#{clave}}", to_string(valor))
-      end)
-    end)
-  end
 end

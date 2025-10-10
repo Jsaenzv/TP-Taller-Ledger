@@ -1,7 +1,7 @@
 defmodule Ledger.Entidades.TransaccionTest do
   use ExUnit.Case, async: false
 
-  alias Ledger.Entidades.{Moneda, Transaccion, Usuario}
+  alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB}
   alias Ledger.Repo
 
   import Ecto.Changeset
@@ -65,7 +65,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{} == errores_en(changeset)
+      assert %{} == FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta monto" , %{
@@ -91,7 +91,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{monto: ["Este campo es obligatorio"]} == errores_en(changeset)
+alias Ledger.Entidades.FuncionesDB
+      assert %{monto: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta tipo" , %{
@@ -117,7 +118,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{tipo: ["Este campo es obligatorio"]} == errores_en(changeset)
+      assert %{tipo: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta moneda_origen_id" , %{
@@ -142,7 +143,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{moneda_origen_id: ["Este campo es obligatorio"]} == errores_en(changeset)
+      assert %{moneda_origen_id: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta cuenta_origen" , %{
@@ -167,7 +168,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.moneda_destino_id == moneda_destino.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{cuenta_origen: ["Este campo es obligatorio"]} == errores_en(changeset)
+      assert %{cuenta_origen: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta moneda_destino y el tipo es transferencia" , %{
@@ -192,7 +193,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{moneda_destino_id: ["Este campo es obligatorio en caso de transferencia"]} == errores_en(changeset)
+      assert %{moneda_destino_id: ["Este campo es obligatorio en caso de transferencia"]} == FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta cuenta_destino y el tipo es transferencia" , %{
@@ -217,7 +218,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
 
-      assert %{cuenta_destino: ["Este campo es obligatorio en caso de transferencia"]} == errores_en(changeset)
+      assert %{cuenta_destino: ["Este campo es obligatorio en caso de transferencia"]} == FuncionesDB.errores_en(changeset)
     end
 
     @monto_negativo -1
@@ -244,7 +245,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{monto: ["Debe ser mayor a cero"]} == errores_en(changeset)
+      assert %{monto: ["Debe ser mayor a cero"]} == FuncionesDB.errores_en(changeset)
     end
 
     @moneda_origen_id_inexistente 1000000
@@ -268,7 +269,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{moneda_origen: ["Debe existir en la tabla Monedas"]} == errores_en(changeset)
+      assert %{moneda_origen: ["Debe existir en la tabla Monedas"]} == FuncionesDB.errores_en(changeset)
     end
 
     @moneda_destino_id_inexistente 1000000
@@ -292,7 +293,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.cuenta_origen == cuenta_origen.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{moneda_destino: ["Debe existir en la tabla Monedas"]} == errores_en(changeset)
+      assert %{moneda_destino: ["Debe existir en la tabla Monedas"]} == FuncionesDB.errores_en(changeset)
     end
 
     @cuenta_origen_inexistente 1000000
@@ -316,7 +317,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.moneda_destino_id == moneda_destino.id
       assert changeset.changes.cuenta_destino == cuenta_destino.id
 
-      assert %{cuenta_origen_usuario: ["Debe existir en la tabla Usuarios"]} == errores_en(changeset)
+      assert %{cuenta_origen_usuario: ["Debe existir en la tabla Usuarios"]} == FuncionesDB.errores_en(changeset)
     end
 
     @cuenta_destino_inexistente 1000000
@@ -340,7 +341,7 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.moneda_destino_id == moneda_destino.id
       assert changeset.changes.cuenta_origen == cuenta_origen.id
 
-      assert %{cuenta_destino_usuario: ["Debe existir en la tabla Usuarios"]} == errores_en(changeset)
+      assert %{cuenta_destino_usuario: ["Debe existir en la tabla Usuarios"]} == FuncionesDB.errores_en(changeset)
     end
   end
 
@@ -408,16 +409,9 @@ defmodule Ledger.Entidades.TransaccionTest do
         changeset = Transaccion.reversal_changeset(transaccion_1)
 
         refute changeset.valid?
-        assert %{base: ["solo se puede deshacer la última transacción de cada cuenta involucrada"]} == errores_en(changeset)
+        assert %{base: ["solo se puede deshacer la última transacción de cada cuenta involucrada"]} == FuncionesDB.errores_en(changeset)
     end
     # test: Transacción sin cuenta destino: crear una transacción con cuenta_destino nil y confirmar que la reversión mantiene esa ausencia coherentemente.
   end
 
-  defp errores_en(changeset) do
-    traverse_errors(changeset, fn {mensaje, opciones} ->
-      Enum.reduce(opciones, mensaje, fn {clave, valor}, acumulado ->
-        String.replace(acumulado, "%{#{clave}}", to_string(valor))
-      end)
-    end)
-  end
 end
