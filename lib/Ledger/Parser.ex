@@ -38,11 +38,17 @@ defmodule Ledger.Parser do
     end)
     |> Enum.map(fn {clave, valor} ->
       case {clave, valor} do
+        {"-u", valor} -> {"id_usuario", valor}
+        {"-a", valor} -> {"monto", valor}
         {"-c1", valor} -> {"cuenta_origen", valor}
         {"-c2", valor} -> {"cuenta_destino", valor}
         {"-t", valor} -> {"input_path", valor}
-        {"-o", valor} -> {"output_path", valor}
+        {"-id", valor} -> {"id_transaccion", valor}
+        {"-o", valor} -> {"id_usuario_origen", valor}
+        {"-d", valor} -> {"id_usuario_destino", valor}
         {"-m", valor} -> {"moneda", valor}
+        {"-mo", valor} -> {"id_moneda_origen", valor}
+        {"-md", valor} -> {"id_moneda_destino", valor}
         _ -> raise ArgumentError, message: "Flag no soportado: #{clave}"
       end
     end)
