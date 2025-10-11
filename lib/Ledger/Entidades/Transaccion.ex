@@ -40,28 +40,27 @@ defmodule Ledger.Entidades.Transaccion do
       :cuenta_destino
     ])
     |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen],
-         message: "Este campo es obligatorio"
-       )
+      message: "Este campo es obligatorio"
+    )
     |> validar_destinos_si_transferencia()
     |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
     |> assoc_constraint(:moneda_origen, message: "Debe existir en la tabla Monedas")
     |> assoc_constraint(:moneda_destino, message: "Debe existir en la tabla Monedas")
     |> assoc_constraint(:cuenta_origen_usuario, message: "Debe existir en la tabla Usuarios")
     |> assoc_constraint(:cuenta_destino_usuario, message: "Debe existir en la tabla Usuarios")
-end
-
-defp validar_destinos_si_transferencia(changeset) do
-  case get_field(changeset, :tipo) do
-    "transferencia" ->
-      validate_required(changeset, [:moneda_destino_id, :cuenta_destino],
-        message: "Este campo es obligatorio en caso de transferencia"
-      )
-
-    _ ->
-      changeset
   end
-end
 
+  defp validar_destinos_si_transferencia(changeset) do
+    case get_field(changeset, :tipo) do
+      "transferencia" ->
+        validate_required(changeset, [:moneda_destino_id, :cuenta_destino],
+          message: "Este campo es obligatorio en caso de transferencia"
+        )
+
+      _ ->
+        changeset
+    end
+  end
 
   def reversal_changeset(%__MODULE__{} = original, repo \\ Repo) do
     original
@@ -78,7 +77,9 @@ end
         :cuenta_destino,
         :deshacer_de_id
       ])
-      |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen, :deshacer_de_id], message: "Este campo es obligatorio")
+      |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen, :deshacer_de_id],
+        message: "Este campo es obligatorio"
+      )
       |> validate_change(:deshacer_de_id, fn :deshacer_de_id, value ->
         if value == original.id do
           []

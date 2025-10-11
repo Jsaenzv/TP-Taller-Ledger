@@ -15,8 +15,7 @@ defmodule Ledger.Entidades.UsuarioTest do
       |> Usuario.changeset(%{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]})
       |> Repo.insert!()
 
-    {:ok,
-     usuario: usuario}
+    {:ok, usuario: usuario}
   end
 
   describe "changeset/2" do
@@ -49,7 +48,9 @@ defmodule Ledger.Entidades.UsuarioTest do
     atributos = %{nombre: usuario.nombre, fecha_nacimiento: @fecha_de_nacimiento_invalida}
     changeset = Usuario.changeset(%Usuario{}, atributos)
     refute changeset.valid?
-    assert %{fecha_nacimiento: ["El usuario debe ser mayor de 18 años"]} == FuncionesDB.errores_en(changeset)
+
+    assert %{fecha_nacimiento: ["El usuario debe ser mayor de 18 años"]} ==
+             FuncionesDB.errores_en(changeset)
   end
 
   @nombre_para_test "pepito"
@@ -60,5 +61,4 @@ defmodule Ledger.Entidades.UsuarioTest do
     refute changeset.valid?
     assert %{nombre: ["Ya existe un usuario con ese nombre"]} == FuncionesDB.errores_en(changeset)
   end
-
 end

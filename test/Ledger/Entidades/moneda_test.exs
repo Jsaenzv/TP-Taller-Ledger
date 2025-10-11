@@ -15,8 +15,7 @@ defmodule Ledger.Entidades.MonedaTest do
       |> Moneda.changeset(%{nombre: "ARS", precio_en_dolares: 1200})
       |> Repo.insert!()
 
-    {:ok,
-     moneda: moneda}
+    {:ok, moneda: moneda}
   end
 
   describe "changeset/2" do
@@ -39,7 +38,9 @@ defmodule Ledger.Entidades.MonedaTest do
       atributos = %{nombre: moneda.nombre, precio_en_dolares: nil}
       changeset = Moneda.changeset(%Moneda{}, atributos)
       refute changeset.valid?
-      assert %{precio_en_dolares: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
+
+      assert %{precio_en_dolares: ["Este campo es obligatorio"]} ==
+               FuncionesDB.errores_en(changeset)
     end
 
     @nombre_moneda "USDT"
@@ -48,7 +49,9 @@ defmodule Ledger.Entidades.MonedaTest do
       _moneda1 = Moneda.changeset(%Moneda{}, atributos) |> Repo.insert!()
       {:error, changeset} = Moneda.changeset(%Moneda{}, atributos) |> Repo.insert()
       refute changeset.valid?
-      assert %{nombre: ["Ya existe una moneda con ese nombre"]} == FuncionesDB.errores_en(changeset)
+
+      assert %{nombre: ["Ya existe una moneda con ese nombre"]} ==
+               FuncionesDB.errores_en(changeset)
     end
 
     @nombre_mayor_a_4_letras "PESOARGENTINO"
@@ -56,7 +59,9 @@ defmodule Ledger.Entidades.MonedaTest do
       atributos = %{nombre: @nombre_mayor_a_4_letras, precio_en_dolares: moneda.precio_en_dolares}
       changeset = Moneda.changeset(%Moneda{}, atributos)
       refute changeset.valid?
-      assert %{nombre: ["El nombre debe tener 3 o 4 caracteres"]} == FuncionesDB.errores_en(changeset)
+
+      assert %{nombre: ["El nombre debe tener 3 o 4 caracteres"]} ==
+               FuncionesDB.errores_en(changeset)
     end
 
     @nombre_menor_a_4_letras "AR"
@@ -64,14 +69,18 @@ defmodule Ledger.Entidades.MonedaTest do
       atributos = %{nombre: @nombre_menor_a_4_letras, precio_en_dolares: moneda.precio_en_dolares}
       changeset = Moneda.changeset(%Moneda{}, atributos)
       refute changeset.valid?
-      assert %{nombre: ["El nombre debe tener 3 o 4 caracteres"]} == FuncionesDB.errores_en(changeset)
+
+      assert %{nombre: ["El nombre debe tener 3 o 4 caracteres"]} ==
+               FuncionesDB.errores_en(changeset)
     end
 
     test "no permite modificar el nombre una vez creada", %{moneda: moneda} do
-    changeset = Moneda.changeset(moneda, %{nombre: "EUR"})
+      changeset = Moneda.changeset(moneda, %{nombre: "EUR"})
 
-    refute changeset.valid?
-    assert %{nombre: ["no se puede modificar una vez creado"]} == FuncionesDB.errores_en(changeset)
+      refute changeset.valid?
+
+      assert %{nombre: ["no se puede modificar una vez creado"]} ==
+               FuncionesDB.errores_en(changeset)
     end
   end
 end
