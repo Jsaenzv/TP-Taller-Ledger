@@ -2,8 +2,7 @@ defmodule Ledger.Entidades do
   alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB}
   alias Ledger.Repo
 
-  def crear_usuario(nombre, fecha_nacimiento) do
-    atributos = %{nombre: nombre, fecha_nacimiento: fecha_nacimiento}
+  def crear_usuario(atributos) when is_map(atributos) do
     Usuario.changeset(%Usuario{}, atributos) |> Repo.insert()
   end
 
@@ -11,27 +10,15 @@ defmodule Ledger.Entidades do
     Usuario.changeset(usuario, atributos) |> Repo.update()
   end
 
-  def eliminar_usuario(usuario) do
-    Repo.delete(usuario)
+  def eliminar_usuario(id_usuario) do
+    usuario = Repo.get(Usuario, id_usuario)
+    case usuario do
+      nil -> {:error, :not_found}
+      _ -> Repo.delete(usuario)
+    end
   end
 
-  def crear_transaccion(
-        monto,
-        tipo,
-        id_moneda_origen,
-        id_moneda_destino,
-        id_cuenta_origen,
-        id_cuenta_destino
-      ) do
-    atributos = %{
-      monto: monto,
-      tipo: tipo,
-      moneda_origen_id: id_moneda_origen,
-      moneda_destino_id: id_moneda_destino,
-      cuenta_origen_id: id_cuenta_origen,
-      cuenta_destino_id: id_cuenta_destino
-    }
-
+  def crear_transaccion(atributos) when is_map(atributos) do
     Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
   end
 end

@@ -10,6 +10,8 @@ defmodule Ledger.EntidadesTests do
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
     Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+    Repo.delete_all(Transaccion)
+    Repo.delete_all(Moneda)
     Repo.delete_all(Usuario)
     :ok
   end
@@ -19,38 +21,37 @@ defmodule Ledger.EntidadesTests do
   @fecha_nacimiento_default ~D[1990-01-01]
   @fecha_nacimiento_alternativa ~D[2000-01-01]
   @fecha_nacimiento_invalida ~D[2020-01-01]
-  @moneda_default %Moneda{nombre: "Peso", simbolo: "ARS"}
-  @moneda_alternativa %Moneda{nombre: "Dólar", simbolo: "USD"}
-
+  @moneda_default %{nombre: "ARS", precio_en_dolares: 1200}
+  @moneda_alternativa %{nombre: "USD", precio_en_dolares: 1}
   @monto_default 100
   @monto_alternativo 200
-
+  @tipo_default "transferencia"
+  @tipo_alternativo "alta_cuenta"
   @descripcion_default "Pago de prueba"
   @descripcion_alternativa "Transferencia alternativa"
-
   @fecha_transaccion_default ~D[2024-01-01]
   @fecha_transaccion_alternativa ~D[2024-06-01]
-
   @campo_obligatorio "Este campo es obligatorio"
   @usuario_mayor_18 "El usuario debe ser mayor de 18 años"
-  @monto_negativo "Debe ser mayor que 0"
+  @monto_invalido -1
+  @monto_negativo "Debe ser mayor a cero"
 
   describe "crear_usuario/2" do
     test "Ingreso usuario válido" do
-      {:ok, usuario_creado} = Entidades.crear_usuario(@nombre_default, @fecha_nacimiento_default)
+      {:ok, usuario_creado} = Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_default})
       assert usuario_creado.nombre == @nombre_default
       assert usuario_creado.fecha_nacimiento == @fecha_nacimiento_default
     end
 
     test "Ingreso usuario inválido" do
-      assert {:error, changeset} = Entidades.crear_usuario(nil, nil)
+      assert {:error, changeset} = Entidades.crear_usuario(%{})
       refute changeset.valid?
 
       assert %{nombre: [@campo_obligatorio], fecha_nacimiento: [@campo_obligatorio]} =
                FuncionesDB.errores_en(changeset)
 
       assert {:error, changeset} =
-               Entidades.crear_usuario(@nombre_default, @fecha_nacimiento_invalida)
+               Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_invalida})
 
       refute changeset.valid?
       assert %{fecha_nacimiento: [@usuario_mayor_18]} = FuncionesDB.errores_en(changeset)
@@ -59,7 +60,7 @@ defmodule Ledger.EntidadesTests do
 
   describe "editar_usuario/2" do
     test "Edito usuario" do
-      {:ok, usuario_creado} = Entidades.crear_usuario(@nombre_default, @fecha_nacimiento_default)
+      {:ok, usuario_creado} = Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_default})
       atributos = %{nombre: @nombre_alternativo, fecha_nacimiento: @fecha_nacimiento_alternativa}
       {:ok, usuario_editado} = Entidades.editar_usuario(usuario_creado, atributos)
       assert usuario_editado.nombre == @nombre_alternativo
@@ -69,76 +70,97 @@ defmodule Ledger.EntidadesTests do
 
   describe "eliminar_usuario/1" do
     test "elimino usuario válido" do
-      {:ok, usuario_creado} = Entidades.crear_usuario(@nombre_default, @fecha_nacimiento_default)
-      assert {:ok, usuario_eliminado} = Entidades.eliminar_usuario(usuario_creado)
+      {:ok, usuario_creado} = Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_default})
+      assert {:ok, usuario_eliminado} = Entidades.eliminar_usuario(usuario_creado.id)
       assert usuario_eliminado.id == usuario_creado.id
       assert Repo.get(Usuario, usuario_creado.id) == nil
     end
 
     test "elimino usuario inexistente en la base de datos" do
-      usuario_falso = %Usuario{id: -1, nombre: "fantasma", fecha_nacimiento: ~D[1980-01-01]}
-      assert {:error, :not_found} = Entidades.eliminar_usuario(usuario_falso)
+      id_usuario_falso = -1
+      assert {:error, :not_found} = Entidades.eliminar_usuario(id_usuario_falso)
     end
   end
 
-  describe "crear_transaccion/6" do
+  describe "crear_transaccion/1" do
     test "creo transacción válida" do
-      {:ok, usuario_origen} = Entidades.crear_usuario(@nombre_default, @fecha_nacimiento_default)
+      {:ok, usuario_origen} =
+        Entidades.crear_usuario(%{
+          nombre: @nombre_default,
+          fecha_nacimiento: @fecha_nacimiento_default
+        })
 
       {:ok, usuario_destino} =
-        Entidades.crear_usuario(@nombre_alternativo, @fecha_nacimiento_alternativa)
+        Entidades.crear_usuario(%{
+          nombre: @nombre_alternativo,
+          fecha_nacimiento: @fecha_nacimiento_alternativa
+        })
 
-      moneda = @moneda_default
-      monto = @monto_default
-      descripcion = @descripcion_default
-      fecha = @fecha_transaccion_default
+      moneda_origen =
+        %Moneda{}
+        |> Moneda.changeset(@moneda_default)
+        |> Repo.insert!()
 
-      {:ok, transaccion_creada} =
-        Entidades.crear_transaccion(
-          usuario_origen,
-          usuario_destino,
-          moneda,
-          monto,
-          descripcion,
-          fecha
-        )
+      moneda_destino =
+        %Moneda{}
+        |> Moneda.changeset(@moneda_alternativa)
+        |> Repo.insert!()
 
-      assert transaccion_creada.usuario_origen_id == usuario_origen.id
-      assert transaccion_creada.usuario_destino_id == usuario_destino.id
-      assert transaccion_creada.moneda_id == moneda.id
-      assert transaccion_creada.monto == monto
-      assert transaccion_creada.descripcion == descripcion
-      assert transaccion_creada.fecha == fecha
+      atributos = %{
+        monto: @monto_default,
+        tipo: @tipo_default,
+        moneda_origen_id: moneda_origen.id,
+        moneda_destino_id: moneda_destino.id,
+        cuenta_origen: usuario_origen.id,
+        cuenta_destino: usuario_destino.id
+      }
+
+      assert {:ok, transaccion_creada} = Entidades.crear_transaccion(atributos)
+
+      assert transaccion_creada.monto == @monto_default
+      assert transaccion_creada.tipo == @tipo_default
+      assert transaccion_creada.moneda_origen_id == moneda_origen.id
+      assert transaccion_creada.moneda_destino_id == moneda_destino.id
+      assert transaccion_creada.cuenta_origen == usuario_origen.id
+      assert transaccion_creada.cuenta_destino == usuario_destino.id
     end
 
     test "creo transacción inválida" do
-      usuario_origen = nil
-      usuario_destino = nil
-      moneda = nil
-      monto = -10
-      descripcion = nil
-      fecha = nil
+      atributos = %{}
 
-      assert {:error, changeset} =
-               Entidades.crear_transaccion(
-                 usuario_origen,
-                 usuario_destino,
-                 moneda,
-                 monto,
-                 descripcion,
-                 fecha
-               )
-
+      assert {:error, changeset} = Entidades.crear_transaccion(atributos)
       refute changeset.valid?
 
       assert %{
-               usuario_origen_id: [@campo_obligatorio],
-               usuario_destino_id: [@campo_obligatorio],
-               moneda_id: [@campo_obligatorio],
-               monto: [@monto_negativo],
-               descripcion: [@campo_obligatorio],
-               fecha: [@campo_obligatorio]
-             } = FuncionesDB.errores_en(changeset)
+        cuenta_origen: [@campo_obligatorio],
+        moneda_origen_id: [@campo_obligatorio],
+        monto: [@campo_obligatorio],
+        tipo: [@campo_obligatorio]
+      } = FuncionesDB.errores_en(changeset)
+    end
+
+    test "creo transacción con monto negativo" do
+      {:ok, usuario_origen} =
+        Entidades.crear_usuario(%{
+          nombre: @nombre_default,
+          fecha_nacimiento: @fecha_nacimiento_default
+        })
+
+      moneda_origen =
+        %Moneda{}
+        |> Moneda.changeset(@moneda_default)
+        |> Repo.insert!()
+
+      atributos = %{
+        monto: @monto_invalido,
+        tipo: @tipo_alternativo,
+        moneda_origen_id: moneda_origen.id,
+        cuenta_origen: usuario_origen.id
+      }
+
+      assert {:error, changeset} = Entidades.crear_transaccion(atributos)
+      refute changeset.valid?
+      assert %{monto: [@monto_negativo]} = FuncionesDB.errores_en(changeset)
     end
   end
 end
