@@ -26,6 +26,10 @@ defmodule Ledger.Entidades do
     Moneda.changeset(%Moneda{}, atributos) |> Repo.insert()
   end
 
+  def editar_moneda(%Moneda{} = moneda, precio_en_dolares) do
+    Moneda.changeset(moneda, %{precio_en_dolares: precio_en_dolares}) |> Repo.update()
+  end
+
   def deshacer_transaccion(id_transaccion) do
     case Repo.get(Transaccion, id_transaccion) do
       nil ->
