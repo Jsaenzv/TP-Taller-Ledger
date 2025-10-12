@@ -82,6 +82,48 @@ defmodule Ledger.EntidadesTests do
     end
   end
 
+  describe "crear_moneda/1" do
+    test "creo moneda válida" do
+      assert {:ok, moneda} = Entidades.crear_moneda(@moneda_default)
+      assert moneda.nombre == @moneda_default.nombre
+      assert moneda.precio_en_dolares == @moneda_default.precio_en_dolares
+    end
+
+    test "creo moneda inválida" do
+      assert {:error, changeset} = Entidades.crear_moneda(%{})
+      refute changeset.valid?
+
+      assert %{
+               nombre: [@campo_obligatorio],
+               precio_en_dolares: [@campo_obligatorio]
+             } = FuncionesDB.errores_en(changeset)
+    end
+  end
+
+  describe "editar_moneda/2" do
+    test "actualiza precio en dólares" do
+      {:ok, moneda} = Entidades.crear_moneda(@moneda_default)
+
+      assert {:ok, moneda_editada} = Entidades.editar_moneda(moneda, 1500.0)
+      assert moneda_editada.precio_en_dolares == 1500.0
+      assert moneda_editada.nombre == moneda.nombre
+    end
+  end
+
+  describe "eliminar_moneda/1" do
+    test "elimino moneda existente" do
+      {:ok, moneda} = Entidades.crear_moneda(@moneda_alternativa)
+
+      assert {:ok, moneda_eliminada} = Entidades.eliminar_moneda(moneda.id)
+      assert moneda_eliminada.id == moneda.id
+      assert Repo.get(Moneda, moneda.id) == nil
+    end
+
+    test "retorna error cuando la moneda no existe" do
+      assert {:error, :not_found} = Entidades.eliminar_moneda(-1)
+    end
+  end
+
   describe "crear_transaccion/1" do
     test "creo transacción válida" do
       {:ok, usuario_origen} =
