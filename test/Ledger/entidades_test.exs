@@ -163,4 +163,102 @@ defmodule Ledger.EntidadesTests do
       assert %{monto: [@monto_negativo]} = FuncionesDB.errores_en(changeset)
     end
   end
+
+  describe "deshacer_transaccion/1" do
+    test "crea reversa válida para la última transacción" do
+      {:ok, usuario_origen} =
+        Entidades.crear_usuario(%{
+          nombre: @nombre_default,
+          fecha_nacimiento: @fecha_nacimiento_default
+        })
+
+      {:ok, usuario_destino} =
+        Entidades.crear_usuario(%{
+          nombre: @nombre_alternativo,
+          fecha_nacimiento: @fecha_nacimiento_alternativa
+        })
+
+      moneda_origen =
+        %Moneda{}
+        |> Moneda.changeset(@moneda_alternativa)
+        |> Repo.insert!()
+
+      moneda_destino =
+        %Moneda{}
+        |> Moneda.changeset(@moneda_default)
+        |> Repo.insert!()
+
+      {:ok, original} =
+        Entidades.crear_transaccion(%{
+          monto: @monto_default,
+          tipo: @tipo_default,
+          moneda_origen_id: moneda_origen.id,
+          moneda_destino_id: moneda_destino.id,
+          cuenta_origen: usuario_origen.id,
+          cuenta_destino: usuario_destino.id
+        })
+
+      assert {:ok, reversa} = Entidades.deshacer_transaccion(original.id)
+      assert reversa.tipo == "reversa"
+      assert reversa.monto == original.monto
+      assert reversa.moneda_origen_id == original.moneda_destino_id
+      assert reversa.moneda_destino_id == original.moneda_origen_id
+      assert reversa.cuenta_origen == original.cuenta_destino
+      assert reversa.cuenta_destino == original.cuenta_origen
+    end
+
+    test "devuelve error cuando la transacción no existe" do
+      assert {:error, :not_found} = Entidades.deshacer_transaccion(-1)
+    end
+
+    test "rechaza deshacer si no es la última transacción" do
+      {:ok, usuario_origen} =
+        Entidades.crear_usuario(%{
+          nombre: "carlos",
+          fecha_nacimiento: @fecha_nacimiento_default
+        })
+
+      {:ok, usuario_destino} =
+        Entidades.crear_usuario(%{
+          nombre: "lucia",
+          fecha_nacimiento: @fecha_nacimiento_alternativa
+        })
+
+      moneda_origen =
+        %Moneda{}
+        |> Moneda.changeset(@moneda_alternativa)
+        |> Repo.insert!()
+
+      moneda_destino =
+        %Moneda{}
+        |> Moneda.changeset(@moneda_default)
+        |> Repo.insert!()
+
+      {:ok, primera_transaccion} =
+        Entidades.crear_transaccion(%{
+          monto: @monto_default,
+          tipo: @tipo_default,
+          moneda_origen_id: moneda_origen.id,
+          moneda_destino_id: moneda_destino.id,
+          cuenta_origen: usuario_origen.id,
+          cuenta_destino: usuario_destino.id
+        })
+
+      {:ok, _segunda_transaccion} =
+        Entidades.crear_transaccion(%{
+          monto: @monto_alternativo,
+          tipo: @tipo_default,
+          moneda_origen_id: moneda_origen.id,
+          moneda_destino_id: moneda_destino.id,
+          cuenta_origen: usuario_origen.id,
+          cuenta_destino: usuario_destino.id
+        })
+
+      assert {:error, changeset} = Entidades.deshacer_transaccion(primera_transaccion.id)
+
+      assert %{
+               base: ["solo se puede deshacer la última transacción de cada cuenta involucrada"]
+             } = FuncionesDB.errores_en(changeset)
+    end
+  end
 end
