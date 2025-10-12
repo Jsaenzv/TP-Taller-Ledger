@@ -22,6 +22,10 @@ defmodule Ledger.Entidades do
     Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
   end
 
+  def crear_moneda(atributos) when is_map(atributos) do
+    Moneda.changeset(%Moneda{}, atributos) |> Repo.insert()
+  end
+
   def deshacer_transaccion(id_transaccion) do
     case Repo.get(Transaccion, id_transaccion) do
       nil ->
@@ -33,6 +37,4 @@ defmodule Ledger.Entidades do
         |> Repo.insert()
     end
   end
-
-
 end
