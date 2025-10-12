@@ -21,4 +21,18 @@ defmodule Ledger.Entidades do
   def crear_transaccion(atributos) when is_map(atributos) do
     Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
   end
+
+  def deshacer_transaccion(id_transaccion) do
+    case Repo.get(Transaccion, id_transaccion) do
+      nil ->
+        {:error, :not_found}
+
+      transaccion ->
+        transaccion
+        |> Transaccion.reversal_changeset()
+        |> Repo.insert()
+    end
+  end
+
+
 end
