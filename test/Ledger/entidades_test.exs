@@ -5,8 +5,6 @@ defmodule Ledger.EntidadesTests do
   alias Ledger.Entidades
   alias Ledger.Repo
 
-  import Ecto.Changeset
-
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
     Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
@@ -27,10 +25,6 @@ defmodule Ledger.EntidadesTests do
   @monto_alternativo 200
   @tipo_default "transferencia"
   @tipo_alternativo "alta_cuenta"
-  @descripcion_default "Pago de prueba"
-  @descripcion_alternativa "Transferencia alternativa"
-  @fecha_transaccion_default ~D[2024-01-01]
-  @fecha_transaccion_alternativa ~D[2024-06-01]
   @campo_obligatorio "Este campo es obligatorio"
   @usuario_mayor_18 "El usuario debe ser mayor de 18 años"
   @monto_invalido -1

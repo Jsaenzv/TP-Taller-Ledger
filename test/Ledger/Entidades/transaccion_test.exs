@@ -4,8 +4,6 @@ defmodule Ledger.Entidades.TransaccionTest do
   alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB}
   alias Ledger.Repo
 
-  import Ecto.Changeset
-
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
     Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})

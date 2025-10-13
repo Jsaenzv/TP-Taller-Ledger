@@ -1,10 +1,8 @@
 defmodule Ledger.Entidades.UsuarioTest do
   use ExUnit.Case, async: false
 
-  alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB}
+  alias Ledger.Entidades.{Usuario, FuncionesDB}
   alias Ledger.Repo
-
-  import Ecto.Changeset
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)

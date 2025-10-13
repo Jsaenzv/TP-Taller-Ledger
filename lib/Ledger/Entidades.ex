@@ -1,5 +1,5 @@
 defmodule Ledger.Entidades do
-  alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB}
+  alias Ledger.Entidades.{Moneda, Transaccion, Usuario}
   alias Ledger.Repo
 
   def crear_usuario(atributos) when is_map(atributos) do
