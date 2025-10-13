@@ -12,6 +12,7 @@ defmodule Ledger.Entidades do
 
   def eliminar_usuario(id_usuario) do
     usuario = Repo.get(Usuario, id_usuario)
+
     case usuario do
       nil -> {:error, :not_found}
       _ -> Repo.delete(usuario)
@@ -32,6 +33,7 @@ defmodule Ledger.Entidades do
 
   def eliminar_moneda(id_moneda) do
     moneda = Repo.get(Moneda, id_moneda)
+
     case moneda do
       nil -> {:error, :not_found}
       _ -> Repo.delete(moneda)

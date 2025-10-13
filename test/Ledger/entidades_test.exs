@@ -32,7 +32,12 @@ defmodule Ledger.EntidadesTests do
 
   describe "crear_usuario/2" do
     test "Ingreso usuario válido" do
-      {:ok, usuario_creado} = Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_default})
+      {:ok, usuario_creado} =
+        Entidades.crear_usuario(%{
+          nombre: @nombre_default,
+          fecha_nacimiento: @fecha_nacimiento_default
+        })
+
       assert usuario_creado.nombre == @nombre_default
       assert usuario_creado.fecha_nacimiento == @fecha_nacimiento_default
     end
@@ -45,7 +50,10 @@ defmodule Ledger.EntidadesTests do
                FuncionesDB.errores_en(changeset)
 
       assert {:error, changeset} =
-               Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_invalida})
+               Entidades.crear_usuario(%{
+                 nombre: @nombre_default,
+                 fecha_nacimiento: @fecha_nacimiento_invalida
+               })
 
       refute changeset.valid?
       assert %{fecha_nacimiento: [@usuario_mayor_18]} = FuncionesDB.errores_en(changeset)
@@ -54,7 +62,12 @@ defmodule Ledger.EntidadesTests do
 
   describe "editar_usuario/2" do
     test "Edito usuario" do
-      {:ok, usuario_creado} = Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_default})
+      {:ok, usuario_creado} =
+        Entidades.crear_usuario(%{
+          nombre: @nombre_default,
+          fecha_nacimiento: @fecha_nacimiento_default
+        })
+
       atributos = %{nombre: @nombre_alternativo, fecha_nacimiento: @fecha_nacimiento_alternativa}
       {:ok, usuario_editado} = Entidades.editar_usuario(usuario_creado, atributos)
       assert usuario_editado.nombre == @nombre_alternativo
@@ -64,7 +77,12 @@ defmodule Ledger.EntidadesTests do
 
   describe "eliminar_usuario/1" do
     test "elimino usuario válido" do
-      {:ok, usuario_creado} = Entidades.crear_usuario(%{nombre: @nombre_default, fecha_nacimiento: @fecha_nacimiento_default})
+      {:ok, usuario_creado} =
+        Entidades.crear_usuario(%{
+          nombre: @nombre_default,
+          fecha_nacimiento: @fecha_nacimiento_default
+        })
+
       assert {:ok, usuario_eliminado} = Entidades.eliminar_usuario(usuario_creado.id)
       assert usuario_eliminado.id == usuario_creado.id
       assert Repo.get(Usuario, usuario_creado.id) == nil
@@ -168,11 +186,11 @@ defmodule Ledger.EntidadesTests do
       refute changeset.valid?
 
       assert %{
-        cuenta_origen: [@campo_obligatorio],
-        moneda_origen_id: [@campo_obligatorio],
-        monto: [@campo_obligatorio],
-        tipo: [@campo_obligatorio]
-      } = FuncionesDB.errores_en(changeset)
+               cuenta_origen: [@campo_obligatorio],
+               moneda_origen_id: [@campo_obligatorio],
+               monto: [@campo_obligatorio],
+               tipo: [@campo_obligatorio]
+             } = FuncionesDB.errores_en(changeset)
     end
 
     test "creo transacción con monto negativo" do

@@ -7,7 +7,7 @@ defmodule Ledger.CLI do
   alias Ledger.Output
   alias Ledger.Entidades
 
-def main(["transacciones" | flags]) do
+  def main(["transacciones" | flags]) do
     params = Parser.parsear_flags(flags)
 
     case Validador.validar_flags(params, :transacciones) do
@@ -22,7 +22,6 @@ def main(["transacciones" | flags]) do
     output = Transacciones.transacciones(params_filtrados, input_path)
 
     Output.output_transacciones(output, output_path)
-
   end
 
   def main(["balance" | flags]) do
@@ -50,8 +49,11 @@ def main(["transacciones" | flags]) do
       _ -> nil
     end
 
-    atributos_usuario = %{nombre: Map.get(params, :nombre_usuario), fecha_nacimiento: Map.get(params, :fecha_nacimiento)}
+    atributos_usuario = %{
+      nombre: Map.get(params, "nombre_usuario"),
+      fecha_nacimiento: Map.get(params, "fecha_nacimiento")
+    }
+
     Entidades.crear_usuario(atributos_usuario)
   end
-
 end

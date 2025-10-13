@@ -1,5 +1,4 @@
 defmodule Ledger.Output do
-
   alias Ledger.Formatter
   alias Ledger.Constantes
 
@@ -10,7 +9,6 @@ defmodule Ledger.Output do
       ^default_output_path -> IO.puts(Formatter.formattear_transacciones(output))
       _ -> File.write!(path, Formatter.formattear_transacciones(output))
     end
-
   end
 
   def output_balance(output, path) do

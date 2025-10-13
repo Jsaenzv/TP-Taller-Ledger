@@ -2,22 +2,20 @@ defmodule Ledger.Validador do
   alias Ledger.Parser
   alias Ledger.Constantes
 
-
   def validar_flags(flags, :crear_usuario) do
-  obligatorios = [:nombre_usuario, :fecha_nacimiento]
+    obligatorios = ["nombre_usuario", "fecha_nacimiento"]
 
-  cond do
-    Enum.sort(Map.keys(flags)) != obligatorios ->
-      {:error, "flags permitidos: #{Enum.join(obligatorios, ", ")}"}
+    cond do
+      Enum.sort(Map.keys(flags)) != Enum.sort(obligatorios) ->
+        {:error, "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
 
-    Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
-      {:error, "nombre_usuario y fecha_nacimiento son obligatorios"}
+      Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
+        {:error, "nombre_usuario y fecha_nacimiento son obligatorios"}
 
-    true ->
-      :ok
+      true ->
+        :ok
     end
   end
-
 
   def validar_flags(flags, comando) do
     case comando do

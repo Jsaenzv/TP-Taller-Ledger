@@ -2,6 +2,8 @@ defmodule LedgerTest do
   use ExUnit.Case
   import ExUnit.CaptureIO
   doctest Ledger.CLI
+  alias Ledger.Repo
+  alias Ledger.Entidades.Usuario
 
   @ejecutable_path Path.join(File.cwd!(), "ledger")
   @default_csv_path "./data/transacciones.csv"
@@ -211,5 +213,29 @@ defmodule LedgerTest do
     output_parseado = parsear_output(output, :map)
 
     assert output_parseado == esperado
+  end
+
+  describe "CLI crear_usuario" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "crea un usuario cuando los flags son válidos" do
+      assert {:ok, usuario} =
+               Ledger.CLI.main(["crear_usuario", "-n=ana", "-b=1990-01-01"])
+
+      assert usuario.nombre == "ana"
+      assert usuario.fecha_nacimiento == ~D[1990-01-01]
+      assert Repo.get!(Usuario, usuario.id)
+    end
+
+    test "raise cuando falta un flag obligatorio" do
+      assert_raise RuntimeError, ~r/Error al válidar los flags/, fn ->
+        Ledger.CLI.main(["crear_usuario", "-b=1990-01-01"])
+      end
+    end
   end
 end

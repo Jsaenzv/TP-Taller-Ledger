@@ -3,6 +3,7 @@ defmodule Ledger.Transacciones do
   alias Ledger.Constantes
   alias Ledger.Parser
   alias Ledger.Validador
+
   def transacciones(params, input_path) do
     tipos_de_cambio =
       case CSV.leer_csv(Constantes.csv_monedas_path(), Constantes.headers_moneda()) do

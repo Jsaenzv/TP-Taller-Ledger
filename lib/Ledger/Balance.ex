@@ -5,7 +5,6 @@ defmodule Ledger.Balance do
   alias Ledger.Validador
   alias Ledger.Transacciones
 
-
   def balance(params, input_path) do
     moneda = Map.get(params, "moneda", Constantes.default_moneda())
     params = Map.delete(params, "moneda")
