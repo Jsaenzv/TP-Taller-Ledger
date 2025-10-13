@@ -1,7 +1,7 @@
 defmodule LedgerTest do
   use ExUnit.Case
   import ExUnit.CaptureIO
-  doctest Ledger
+  doctest Ledger.CLI
 
   @ejecutable_path Path.join(File.cwd!(), "ledger")
   @default_csv_path "./data/transacciones.csv"
@@ -39,7 +39,7 @@ defmodule LedgerTest do
 
     output =
       capture_io(fn ->
-        assert :ok == Ledger.main(["transacciones", "-t=#{@transacciones_csv_test_path}"])
+        assert :ok == Ledger.CLI.main(["transacciones", "-t=#{@transacciones_csv_test_path}"])
       end)
 
     output_parseado = parsear_output(output, :string)
@@ -58,7 +58,7 @@ defmodule LedgerTest do
 
     output =
       capture_io(fn ->
-        assert :ok == Ledger.main(["transacciones"])
+        assert :ok == Ledger.CLI.main(["transacciones"])
       end)
 
     output_parseado = parsear_output(output, :string)
@@ -73,7 +73,7 @@ defmodule LedgerTest do
     output =
       capture_io(fn ->
         assert :ok ==
-                 Ledger.main([
+                 Ledger.CLI.main([
                    "transacciones",
                    "-t=#{@transacciones_csv_test_path}",
                    "-c1=userA"
@@ -93,7 +93,7 @@ defmodule LedgerTest do
     output =
       capture_io(fn ->
         assert :ok ==
-                 Ledger.main([
+                 Ledger.CLI.main([
                    "transacciones",
                    "-t=#{@transacciones_csv_test_path}",
                    "-c1=userA",
@@ -114,7 +114,7 @@ defmodule LedgerTest do
     output =
       capture_io(fn ->
         assert :ok ==
-                 Ledger.main([
+                 Ledger.CLI.main([
                    "transacciones",
                    "-t=#{@transacciones_csv_test_path}",
                    "-c2=userC"
@@ -132,7 +132,7 @@ defmodule LedgerTest do
 
     capture_io(fn ->
       assert :ok ==
-               Ledger.main([
+               Ledger.CLI.main([
                  "transacciones",
                  "-t=#{@transacciones_csv_test_path}",
                  "-o=#{@output_path}"
@@ -154,7 +154,7 @@ defmodule LedgerTest do
     output =
       capture_io(fn ->
         assert :ok ==
-                 Ledger.main([
+                 Ledger.CLI.main([
                    "balance",
                    "-c1=userM",
                    "-t=#{@transacciones_csv_test_path}"
@@ -174,7 +174,7 @@ defmodule LedgerTest do
 
     capture_io(fn ->
       assert :ok ==
-               Ledger.main([
+               Ledger.CLI.main([
                  "balance",
                  "-c1=userM",
                  "-t=#{@transacciones_csv_test_path}",
@@ -198,7 +198,7 @@ defmodule LedgerTest do
     output =
       capture_io(fn ->
         assert :ok ==
-                 Ledger.main([
+                 Ledger.CLI.main([
                    "balance",
                    "-c1=userC",
                    "-t=#{@transacciones_csv_test_path}",
