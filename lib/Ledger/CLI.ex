@@ -5,6 +5,7 @@ defmodule Ledger.CLI do
   alias Ledger.Transacciones
   alias Ledger.Balance
   alias Ledger.Output
+  alias Ledger.Entidades
 
 def main(["transacciones" | flags]) do
     params = Parser.parsear_flags(flags)
@@ -40,4 +41,17 @@ def main(["transacciones" | flags]) do
 
     Output.output_balance(output, output_path)
   end
+
+  def main(["crear_usuario" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, :crear_usuario) do
+      {:error, razon} -> raise("Error al válidar los flags. #{razon}")
+      _ -> nil
+    end
+
+    atributos_usuario = %{nombre: Map.get(params, :nombre_usuario), fecha_nacimiento: Map.get(params, :fecha_nacimiento)}
+    Entidades.crear_usuario(atributos_usuario)
+  end
+
 end
