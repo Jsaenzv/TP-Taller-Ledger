@@ -15,10 +15,10 @@ defmodule Ledger.CLI do
       _ -> nil
     end
 
-    output_path = Map.get(params, "id_usuario_origen", Constantes.default_output_path())
+    output_path = Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
     input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
 
-    params_filtrados = Map.drop(params, ["id_usuario_origen", "input_path"])
+    params_filtrados = Map.drop(params, ["id_usuario_origen/output_path", "input_path"])
     output = Transacciones.transacciones(params_filtrados, input_path)
 
     Output.output_transacciones(output, output_path)
@@ -32,10 +32,10 @@ defmodule Ledger.CLI do
       _ -> nil
     end
 
-    output_path = Map.get(params, "id_usuario_origen", Constantes.default_output_path())
+    output_path = Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
     input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
 
-    params_filtrados = Map.drop(params, ["id_usuario_origen", "input_path"])
+    params_filtrados = Map.drop(params, ["id_usuario_origen/output_path", "input_path"])
     output = Balance.balance(params_filtrados, input_path)
 
     Output.output_balance(output, output_path)
@@ -50,7 +50,7 @@ defmodule Ledger.CLI do
     end
 
     atributos_usuario = %{
-      nombre: Map.get(params, "nombre_usuario"),
+      nombre: Map.get(params, "nombre"),
       fecha_nacimiento: Map.get(params, "fecha_nacimiento")
     }
 
@@ -65,7 +65,7 @@ defmodule Ledger.CLI do
       _ -> nil
     end
 
-    nombre = Map.get(params, "nombre_usuario")
+    nombre = Map.get(params, "nombre")
     fecha_nacimiento = Map.get(params, "fecha_nacimiento")
 
     atributos_usuario =

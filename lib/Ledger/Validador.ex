@@ -3,7 +3,7 @@ defmodule Ledger.Validador do
   alias Ledger.Constantes
 
   def validar_flags(flags, :crear_usuario) do
-    obligatorios = ["nombre_usuario", "fecha_nacimiento"]
+    obligatorios = ["nombre", "fecha_nacimiento"]
 
     cond do
       Enum.sort(Map.keys(flags)) != Enum.sort(obligatorios) ->
@@ -11,7 +11,7 @@ defmodule Ledger.Validador do
          "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
 
       Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
-        {:error, "nombre_usuario y fecha_nacimiento son obligatorios"}
+        {:error, "nombre y fecha_nacimiento son obligatorios"}
 
       true ->
         :ok
@@ -52,7 +52,7 @@ defmodule Ledger.Validador do
 
   def validar_flags(flags, :editar_usuario) do
     obligatorios = ["id_usuario"]
-    permitidos = ["id_usuario", "nombre_usuario", "fecha_nacimiento"]
+    permitidos = ["id_usuario", "nombre", "fecha_nacimiento"]
 
     keys = Map.keys(flags)
 
