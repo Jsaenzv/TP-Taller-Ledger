@@ -43,7 +43,7 @@ defmodule Ledger.Parser do
         {"-c1", valor} -> {"cuenta_origen", valor}
         {"-c2", valor} -> {"cuenta_destino", valor}
         {"-t", valor} -> {"input_path", valor}
-        {"-id", valor} -> {"id_transaccion", valor}
+        {"-id", valor} -> {"id", valor}
         {"-o", valor} -> {"id_usuario_origen/output_path", valor}
         {"-d", valor} -> {"id_usuario_destino", valor}
         {"-m", valor} -> {"moneda", valor}

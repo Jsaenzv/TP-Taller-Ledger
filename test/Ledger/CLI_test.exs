@@ -348,4 +348,38 @@ defmodule CLITest do
       end
     end
   end
+
+  describe "CLI editar_moneda" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Moneda)
+      :ok
+    end
+
+    test "edita moneda válida" do
+      atributos_moneda = %{nombre: "ARS", precio_en_dolares: 1200}
+      {:ok, moneda} = Entidades.crear_moneda(atributos_moneda)
+
+      assert {:ok, moneda_editada} =
+               Ledger.CLI.main(["editar_moneda", "-id=#{moneda.id}", "-p=1500"])
+
+      assert moneda_editada.id == moneda.id
+      assert moneda_editada.nombre == moneda.nombre
+      assert moneda_editada.precio_en_dolares == 1500
+    end
+
+    test "error al editar moneda inexistente" do
+      assert {:error, :not_found} == Ledger.CLI.main(["editar_moneda", "-id=999999", "-p=1500"])
+    end
+
+    test "error al faltar flag obligatorio" do
+      atributos_moneda = %{nombre: "ARS", precio_en_dolares: 1200}
+      {:ok, moneda} = Entidades.crear_moneda(atributos_moneda)
+
+      assert_raise RuntimeError, ~r/Error al válidar los flags/, fn ->
+        Ledger.CLI.main(["editar_moneda", "-id=#{moneda.id}"])
+      end
+    end
+  end
 end

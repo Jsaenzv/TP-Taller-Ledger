@@ -32,6 +32,7 @@ defmodule Ledger.Validador do
         :ok
     end
   end
+
   def validar_campo_vacio(flags, campo) do
     case Map.get(flags, campo) do
       nil -> :ok

@@ -14,7 +14,13 @@ defmodule Ledger.CLI do
            Validador.validar_flags(
              params,
              [],
-             ["cuenta_origen", "cuenta_destino", "input_path", "id_usuario_origen/output_path", "moneda"]
+             [
+               "cuenta_origen",
+               "cuenta_destino",
+               "input_path",
+               "id_usuario_origen/output_path",
+               "moneda"
+             ]
            ),
          :ok <- Validador.validar_campo_vacio(params, "moneda") do
       :ok
@@ -22,7 +28,9 @@ defmodule Ledger.CLI do
       {:error, razon} -> raise("Error al validar los flags. #{razon}")
     end
 
-    output_path = Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
+    output_path =
+      Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
+
     input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
 
     params_filtrados = Map.drop(params, ["id_usuario_origen/output_path", "input_path"])
@@ -46,7 +54,9 @@ defmodule Ledger.CLI do
       {:error, razon} -> raise("Error al validar los flags. #{razon}")
     end
 
-    output_path = Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
+    output_path =
+      Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
+
     input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
 
     params_filtrados = Map.drop(params, ["id_usuario_origen/output_path", "input_path"])
@@ -133,5 +143,20 @@ defmodule Ledger.CLI do
     }
 
     Entidades.crear_moneda(atributos_moneda)
+  end
+
+  def main(["editar_moneda" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, ["id", "precio_en_dolares"]) do
+      {:error, razon} -> raise("Error al válidar los flags. #{razon}")
+      _ -> nil
+    end
+
+    id_moneda = Map.get(params, "id")
+
+    precio_en_dolares = Map.get(params, "precio_en_dolares")
+
+    Entidades.editar_moneda(id_moneda, precio_en_dolares)
   end
 end

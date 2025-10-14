@@ -48,6 +48,16 @@ defmodule Ledger.Entidades do
     Moneda.changeset(moneda, %{precio_en_dolares: precio_en_dolares}) |> Repo.update()
   end
 
+  def editar_moneda(id_moneda, precio_en_dolares) do
+    case Repo.get(Moneda, id_moneda) do
+      nil ->
+        {:error, :not_found}
+
+      %Moneda{} = moneda ->
+        editar_moneda(moneda, precio_en_dolares)
+    end
+  end
+
   def eliminar_moneda(id_moneda) do
     moneda = Repo.get(Moneda, id_moneda)
 
