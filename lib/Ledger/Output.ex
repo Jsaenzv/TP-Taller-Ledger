@@ -22,4 +22,8 @@ defmodule Ledger.Output do
         File.write!(path, Formatter.formattear_balance(output))
     end
   end
+
+  def output_ver_usuario(usuario) do
+    IO.puts(Formatter.formattear_usuario(usuario))
+  end
 end

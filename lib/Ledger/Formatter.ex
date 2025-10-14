@@ -16,4 +16,17 @@ defmodule Ledger.Formatter do
     |> Enum.sort()
     |> Enum.join("\n")
   end
+
+  def formattear_usuario(%Ledger.Entidades.Usuario{} = usuario) do
+    [
+      "Usuario:",
+      "  id: #{usuario.id}",
+      "  nombre: #{usuario.nombre}",
+      "  fecha_nacimiento: #{usuario.fecha_nacimiento}",
+      "  creado_el: #{usuario.inserted_at}",
+      "  actualizado_el: #{usuario.updated_at}"
+    ]
+    |> Enum.join("\n")
+  end
+
 end
