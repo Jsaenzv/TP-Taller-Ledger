@@ -51,6 +51,7 @@ defmodule Ledger.Parser do
         {"-md", valor} -> {"id_moneda_destino", valor}
         {"-n", valor} -> {"nombre", valor}
         {"-b", valor} -> {"fecha_nacimiento", valor}
+        {"-p", valor} -> {"precio_en_dolares", valor}
         _ -> raise ArgumentError, message: "Flag no soportado: #{clave}"
       end
     end)

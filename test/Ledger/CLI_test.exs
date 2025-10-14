@@ -3,7 +3,7 @@ defmodule CLITest do
   import ExUnit.CaptureIO
   doctest Ledger.CLI
   alias Ledger.Repo
-  alias Ledger.Entidades.Usuario
+  alias Ledger.Entidades.{Usuario, Moneda}
   alias Ledger.Entidades
 
   @ejecutable_path Path.join(File.cwd!(), "ledger")
@@ -322,6 +322,30 @@ defmodule CLITest do
         end)
 
       assert output =~ "Usuario no encontrado"
+    end
+  end
+
+  describe "CLI crear_moneda" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Moneda)
+      :ok
+    end
+
+    test "crea una moneda cuando los flags son válidos" do
+      assert {:ok, moneda} =
+               Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert moneda.nombre == "ARS"
+      assert moneda.precio_en_dolares == 1200
+      assert Repo.get!(Moneda, moneda.id)
+    end
+
+    test "raise cuando falta un flag obligatorio" do
+      assert_raise RuntimeError, ~r/Error al válidar los flags/, fn ->
+        Ledger.CLI.main(["crear_moneda", "-n=ARS"])
+      end
     end
   end
 end

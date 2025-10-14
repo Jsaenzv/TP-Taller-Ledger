@@ -104,4 +104,20 @@ defmodule Ledger.CLI do
     usuario = Entidades.obtener_usuario(Map.get(params, "id_usuario"))
     Output.output_ver_usuario(usuario)
   end
+
+  def main(["crear_moneda" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, :crear_moneda) do
+      {:error, razon} -> raise("Error al válidar los flags. #{razon}")
+      _ -> nil
+    end
+
+    atributos_moneda = %{
+      nombre: Map.get(params, "nombre"),
+      precio_en_dolares: Map.get(params, "precio_en_dolares")
+    }
+
+    Entidades.crear_moneda(atributos_moneda)
+  end
 end
