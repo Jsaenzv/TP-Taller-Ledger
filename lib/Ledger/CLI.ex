@@ -80,4 +80,16 @@ defmodule Ledger.CLI do
     id_usuario = Map.get(params, "id_usuario")
     Entidades.editar_usuario(id_usuario, atributos_usuario)
   end
+
+  def main(["eliminar_usuario" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, :eliminar_usuario) do
+      {:error, razon} -> raise("Error al válidar los flags. #{razon}")
+      _ -> nil
+    end
+
+    id_usuario = Map.get(params, "id_usuario")
+    Entidades.eliminar_usuario(id_usuario)
+  end
 end

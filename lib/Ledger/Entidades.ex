@@ -9,8 +9,9 @@ defmodule Ledger.Entidades do
   def editar_usuario(id_usuario, atributos) do
     usuario = Repo.get(Usuario, id_usuario)
 
-    if usuario == nil do
-      raise RuntimeError, "Usuario no encontrado"
+    case usuario do
+      nil -> {:error, :not_found}
+      _ -> Repo.delete(usuario)
     end
 
     Usuario.changeset(usuario, atributos) |> Repo.update()

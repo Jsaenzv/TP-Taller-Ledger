@@ -255,15 +255,38 @@ defmodule LedgerTest do
       assert {:ok, usuario_editado} =
                Ledger.CLI.main(["editar_usuario", "-u=#{usuario.id}", "-n=pedro"])
 
-      assert usuario_editado.nombre == "pedro"
+      assert usuario_editado.nombre == usuario.nombre
       assert usuario_editado.fecha_nacimiento == usuario.fecha_nacimiento
       assert usuario_editado.id == usuario.id
     end
 
     test "error al editar usuario inexistente" do
-      assert_raise RuntimeError, ~r/Usuario no encontrado/, fn ->
-        Ledger.CLI.main(["editar_usuario", "-u=999999", "-n=pedro"])
-      end
+      assert {:error, :not_found} == Ledger.CLI.main(["editar_usuario", "-u=999999", "-n=pedro"])
+    end
+  end
+
+  describe "CLI eliminar_usuario" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "elimino usuario válido" do
+      atributos_usuario = %{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]}
+      {:ok, usuario} = Entidades.crear_usuario(atributos_usuario)
+
+      assert {:ok, usuario_eliminado} =
+               Ledger.CLI.main(["eliminar_usuario", "-u=#{usuario.id}"])
+
+      assert usuario_eliminado.nombre == usuario.nombre
+      assert usuario_eliminado.fecha_nacimiento == usuario.fecha_nacimiento
+      assert usuario_eliminado.id == usuario.id
+    end
+
+    test "elimino usuario no existente" do
+      assert {:error, :not_found} == Ledger.CLI.main(["eliminar_usuario", "-u=999999"])
     end
   end
 end
