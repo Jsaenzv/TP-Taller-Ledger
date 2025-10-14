@@ -56,4 +56,28 @@ defmodule Ledger.CLI do
 
     Entidades.crear_usuario(atributos_usuario)
   end
+
+  def main(["editar_usuario" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, :editar_usuario) do
+      {:error, razon} -> raise("Error al válidar los flags. #{razon}")
+      _ -> nil
+    end
+
+    nombre = Map.get(params, "nombre_usuario")
+    fecha_nacimiento = Map.get(params, "fecha_nacimiento")
+
+    atributos_usuario =
+      %{}
+      |> (fn atributos -> if nombre, do: Map.put(atributos, :nombre, nombre), else: atributos end).()
+      |> (fn atributos ->
+            if fecha_nacimiento,
+              do: Map.put(atributos, :fecha_nacimiento, fecha_nacimiento),
+              else: atributos
+          end).()
+
+    id_usuario = Map.get(params, "id_usuario")
+    Entidades.editar_usuario(id_usuario, atributos_usuario)
+  end
 end

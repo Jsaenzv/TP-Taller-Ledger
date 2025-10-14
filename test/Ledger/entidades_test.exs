@@ -69,7 +69,7 @@ defmodule Ledger.EntidadesTests do
         })
 
       atributos = %{nombre: @nombre_alternativo, fecha_nacimiento: @fecha_nacimiento_alternativa}
-      {:ok, usuario_editado} = Entidades.editar_usuario(usuario_creado, atributos)
+      {:ok, usuario_editado} = Entidades.editar_usuario(usuario_creado.id, atributos)
       assert usuario_editado.nombre == @nombre_alternativo
       assert usuario_editado.fecha_nacimiento == @fecha_nacimiento_alternativa
     end

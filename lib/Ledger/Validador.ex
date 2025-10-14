@@ -7,10 +7,36 @@ defmodule Ledger.Validador do
 
     cond do
       Enum.sort(Map.keys(flags)) != Enum.sort(obligatorios) ->
-        {:error, "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
+        {:error,
+         "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
 
       Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
         {:error, "nombre_usuario y fecha_nacimiento son obligatorios"}
+
+      true ->
+        :ok
+    end
+  end
+
+  def validar_flags(flags, :editar_usuario) do
+    obligatorios = ["id_usuario"]
+    permitidos = ["id_usuario", "nombre_usuario", "fecha_nacimiento"]
+
+    keys = Map.keys(flags)
+
+    cond do
+      Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
+        {:error, "Los campos obligatorios no pueden ser vacíos: #{Enum.join(obligatorios, ", ")}"}
+
+      Enum.any?(keys, fn k -> k not in permitidos end) ->
+        extras = Enum.filter(keys, fn k -> k not in permitidos end)
+
+        {:error,
+         "flags no permitidos: #{Enum.join(extras, ", ")}. Permitidos: #{Enum.join(permitidos, ", ")}"}
+
+      not Enum.all?(obligatorios, &(&1 in keys)) ->
+        faltantes = Enum.filter(obligatorios, &(!(&1 in keys)))
+        {:error, "Faltan flags obligatorios: #{Enum.join(faltantes, ", ")}"}
 
       true ->
         :ok

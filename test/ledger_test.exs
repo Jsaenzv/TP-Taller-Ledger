@@ -4,6 +4,7 @@ defmodule LedgerTest do
   doctest Ledger.CLI
   alias Ledger.Repo
   alias Ledger.Entidades.Usuario
+  alias Ledger.Entidades
 
   @ejecutable_path Path.join(File.cwd!(), "ledger")
   @default_csv_path "./data/transacciones.csv"
@@ -235,6 +236,33 @@ defmodule LedgerTest do
     test "raise cuando falta un flag obligatorio" do
       assert_raise RuntimeError, ~r/Error al válidar los flags/, fn ->
         Ledger.CLI.main(["crear_usuario", "-b=1990-01-01"])
+      end
+    end
+  end
+
+  describe "CLI editar_usuario" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "edita usuario válido" do
+      atributos_usuario = %{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]}
+      {:ok, usuario} = Entidades.crear_usuario(atributos_usuario)
+
+      assert {:ok, usuario_editado} =
+               Ledger.CLI.main(["editar_usuario", "-u=#{usuario.id}", "-n=pedro"])
+
+      assert usuario_editado.nombre == "pedro"
+      assert usuario_editado.fecha_nacimiento == usuario.fecha_nacimiento
+      assert usuario_editado.id == usuario.id
+    end
+
+    test "error al editar usuario inexistente" do
+      assert_raise RuntimeError, ~r/Usuario no encontrado/, fn ->
+        Ledger.CLI.main(["editar_usuario", "-u=999999", "-n=pedro"])
       end
     end
   end

@@ -6,7 +6,13 @@ defmodule Ledger.Entidades do
     Usuario.changeset(%Usuario{}, atributos) |> Repo.insert()
   end
 
-  def editar_usuario(usuario, atributos) do
+  def editar_usuario(id_usuario, atributos) do
+    usuario = Repo.get(Usuario, id_usuario)
+
+    if usuario == nil do
+      raise RuntimeError, "Usuario no encontrado"
+    end
+
     Usuario.changeset(usuario, atributos) |> Repo.update()
   end
 
