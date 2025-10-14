@@ -2,116 +2,38 @@ defmodule Ledger.Validador do
   alias Ledger.Parser
   alias Ledger.Constantes
 
-  def validar_flags(flags, :crear_usuario) do
-    obligatorios = ["nombre", "fecha_nacimiento"]
-
-    cond do
-      Enum.sort(Map.keys(flags)) != Enum.sort(obligatorios) ->
-        {:error,
-         "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
-
-      Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
-        {:error, "nombre y fecha_nacimiento son obligatorios"}
-
-      true ->
-        :ok
-    end
-  end
-
-  def validar_flags(flags, :crear_moneda) do
-    obligatorios = ["nombre", "precio_en_dolares"]
-
-    cond do
-      Enum.sort(Map.keys(flags)) != Enum.sort(obligatorios) ->
-        {:error,
-         "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
-
-      Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
-        {:error, "nombre y fecha_nacimiento son obligatorios"}
-
-      true ->
-        :ok
-    end
-  end
-
-  def validar_flags(flags, :ver_usuario) do
-    obligatorios = ["id_usuario"]
-
-    cond do
-      Enum.sort(Map.keys(flags)) != Enum.sort(obligatorios) ->
-        {:error,
-         "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
-
-      Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
-        {:error, "id_usuario es obligatorio"}
-
-      true ->
-        :ok
-    end
-  end
-
-  def validar_flags(flags, :eliminar_usuario) do
-    obligatorios = ["id_usuario"]
-
-    cond do
-      Enum.sort(Map.keys(flags)) != Enum.sort(obligatorios) ->
-        {:error,
-         "flags permitidos: #{Enum.join(obligatorios, ", ")}. flags obtenidos: #{Enum.join(Map.keys(flags), ", ")}"}
-
-      Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
-        {:error, "id_usuario es obligatorio"}
-
-      true ->
-        :ok
-    end
-  end
-
-  def validar_flags(flags, :editar_usuario) do
-    obligatorios = ["id_usuario"]
-    permitidos = ["id_usuario", "nombre", "fecha_nacimiento"]
-
+  def validar_flags(flags, obligatorios, permitidos \\ []) do
     keys = Map.keys(flags)
 
-    cond do
-      Enum.any?(obligatorios, &(flags[&1] in [nil, ""])) ->
-        {:error, "Los campos obligatorios no pueden ser vacíos: #{Enum.join(obligatorios, ", ")}"}
+    faltantes =
+      obligatorios
+      |> Enum.reject(&Map.has_key?(flags, &1))
 
-      Enum.any?(keys, fn k -> k not in permitidos end) ->
-        extras = Enum.filter(keys, fn k -> k not in permitidos end)
+    vacios = Enum.filter(obligatorios, &(Map.get(flags, &1) in [nil, ""]))
+
+    extras =
+      keys
+      |> Enum.reject(&(&1 in obligatorios or &1 in permitidos))
+
+    cond do
+      faltantes != [] ->
+        {:error, "Faltan flags obligatorios: #{Enum.join(faltantes, ", ")}"}
+
+      vacios != [] ->
+        {:error, "Los campos obligatorios no pueden ser vacíos: #{Enum.join(vacios, ", ")}"}
+
+      extras != [] ->
+        permitidos_totales = (obligatorios ++ permitidos) |> Enum.uniq()
 
         {:error,
-         "flags no permitidos: #{Enum.join(extras, ", ")}. Permitidos: #{Enum.join(permitidos, ", ")}"}
-
-      not Enum.all?(obligatorios, &(&1 in keys)) ->
-        faltantes = Enum.filter(obligatorios, &(!(&1 in keys)))
-        {:error, "Faltan flags obligatorios: #{Enum.join(faltantes, ", ")}"}
+         "Flags no permitidos: #{Enum.join(extras, ", ")}. Permitidos: #{Enum.join(permitidos_totales, ", ")}"}
 
       true ->
         :ok
     end
   end
-
-  def validar_flags(flags, comando) do
-    case comando do
-      :balance ->
-        with {:ok, _cuenta_origen} <- campo_obligatorio(flags, "cuenta_origen"),
-             :ok <- campo_vacio(flags, "cuenta_destino") do
-          :ok
-        else
-          {:error, razon} -> {:error, razon}
-        end
-
-      :transacciones ->
-        with :ok <- campo_vacio(flags, "moneda") do
-          :ok
-        else
-          {:error, razon} -> {:error, razon}
-        end
-    end
-  end
-
-  defp campo_vacio(mapa, campo) do
-    case Map.get(mapa, campo) do
+  def validar_campo_vacio(flags, campo) do
+    case Map.get(flags, campo) do
       nil -> :ok
       _ -> {:error, "Campo #{campo} debe estar vacío."}
     end

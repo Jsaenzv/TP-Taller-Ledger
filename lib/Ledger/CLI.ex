@@ -10,9 +10,16 @@ defmodule Ledger.CLI do
   def main(["transacciones" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    case Validador.validar_flags(params, :transacciones) do
+    with :ok <-
+           Validador.validar_flags(
+             params,
+             [],
+             ["cuenta_origen", "cuenta_destino", "input_path", "id_usuario_origen/output_path", "moneda"]
+           ),
+         :ok <- Validador.validar_campo_vacio(params, "moneda") do
+      :ok
+    else
       {:error, razon} -> raise("Error al validar los flags. #{razon}")
-      _ -> nil
     end
 
     output_path = Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
@@ -27,9 +34,16 @@ defmodule Ledger.CLI do
   def main(["balance" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    case Validador.validar_flags(params, :balance) do
+    with :ok <-
+           Validador.validar_flags(
+             params,
+             ["cuenta_origen"],
+             ["cuenta_destino", "input_path", "id_usuario_origen/output_path", "moneda"]
+           ),
+         :ok <- Validador.validar_campo_vacio(params, "cuenta_destino") do
+      :ok
+    else
       {:error, razon} -> raise("Error al validar los flags. #{razon}")
-      _ -> nil
     end
 
     output_path = Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
@@ -44,7 +58,7 @@ defmodule Ledger.CLI do
   def main(["crear_usuario" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    case Validador.validar_flags(params, :crear_usuario) do
+    case Validador.validar_flags(params, ["nombre", "fecha_nacimiento"]) do
       {:error, razon} -> raise("Error al válidar los flags. #{razon}")
       _ -> nil
     end
@@ -60,7 +74,7 @@ defmodule Ledger.CLI do
   def main(["editar_usuario" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    case Validador.validar_flags(params, :editar_usuario) do
+    case Validador.validar_flags(params, ["id_usuario"], ["nombre", "fecha_nacimiento"]) do
       {:error, razon} -> raise("Error al válidar los flags. #{razon}")
       _ -> nil
     end
@@ -84,7 +98,7 @@ defmodule Ledger.CLI do
   def main(["eliminar_usuario" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    case Validador.validar_flags(params, :eliminar_usuario) do
+    case Validador.validar_flags(params, ["id_usuario"]) do
       {:error, razon} -> raise("Error al válidar los flags. #{razon}")
       _ -> nil
     end
@@ -96,7 +110,7 @@ defmodule Ledger.CLI do
   def main(["ver_usuario" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    case Validador.validar_flags(params, :ver_usuario) do
+    case Validador.validar_flags(params, ["id_usuario"]) do
       {:error, razon} -> raise("Error al válidar los flags. #{razon}")
       _ -> nil
     end
@@ -108,7 +122,7 @@ defmodule Ledger.CLI do
   def main(["crear_moneda" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    case Validador.validar_flags(params, :crear_moneda) do
+    case Validador.validar_flags(params, ["nombre", "precio_en_dolares"]) do
       {:error, razon} -> raise("Error al válidar los flags. #{razon}")
       _ -> nil
     end
