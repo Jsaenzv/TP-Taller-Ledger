@@ -28,5 +28,4 @@ defmodule Ledger.Formatter do
     ]
     |> Enum.join("\n")
   end
-
 end

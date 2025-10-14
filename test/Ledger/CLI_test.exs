@@ -1,4 +1,4 @@
-defmodule LedgerTest do
+defmodule CLITest do
   use ExUnit.Case
   import ExUnit.CaptureIO
   doctest Ledger.CLI
@@ -255,7 +255,7 @@ defmodule LedgerTest do
       assert {:ok, usuario_editado} =
                Ledger.CLI.main(["editar_usuario", "-u=#{usuario.id}", "-n=pedro"])
 
-      assert usuario_editado.nombre == usuario.nombre
+      assert usuario_editado.nombre == "pedro"
       assert usuario_editado.fecha_nacimiento == usuario.fecha_nacimiento
       assert usuario_editado.id == usuario.id
     end
@@ -287,6 +287,41 @@ defmodule LedgerTest do
 
     test "elimino usuario no existente" do
       assert {:error, :not_found} == Ledger.CLI.main(["eliminar_usuario", "-u=999999"])
+    end
+  end
+
+  describe "CLI ver_usuario" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "ver_usuario válido" do
+      atributos_usuario = %{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]}
+      {:ok, usuario} = Entidades.crear_usuario(atributos_usuario)
+
+      output =
+        capture_io(fn ->
+          assert :ok == Ledger.CLI.main(["ver_usuario", "-u=#{usuario.id}"])
+        end)
+
+      assert output =~ "Usuario:"
+      assert output =~ "  id: #{usuario.id}"
+      assert output =~ "  nombre: #{usuario.nombre}"
+      assert output =~ "  fecha_nacimiento: #{usuario.fecha_nacimiento}"
+      assert output =~ "  creado_el:"
+      assert output =~ "  actualizado_el:"
+    end
+
+    test "ver_usuario con id inexistente" do
+      output =
+        capture_io(fn ->
+          Ledger.CLI.main(["ver_usuario", "-u=999999"])
+        end)
+
+      assert output =~ "Usuario no encontrado"
     end
   end
 end

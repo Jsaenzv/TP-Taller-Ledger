@@ -2,6 +2,18 @@ defmodule Ledger.Entidades do
   alias Ledger.Entidades.{Moneda, Transaccion, Usuario}
   alias Ledger.Repo
 
+  def obtener_usuario(id_usuario) do
+    Repo.get(Usuario, id_usuario)
+  end
+
+  def obtener_transaccion(id_transaccion) do
+    Repo.get(Transaccion, id_transaccion)
+  end
+
+  def obtener_moneda(id_moneda) do
+    Repo.get(Moneda, id_moneda)
+  end
+
   def crear_usuario(atributos) when is_map(atributos) do
     Usuario.changeset(%Usuario{}, atributos) |> Repo.insert()
   end
@@ -11,10 +23,8 @@ defmodule Ledger.Entidades do
 
     case usuario do
       nil -> {:error, :not_found}
-      _ -> Repo.delete(usuario)
+      _ -> Usuario.changeset(usuario, atributos) |> Repo.update()
     end
-
-    Usuario.changeset(usuario, atributos) |> Repo.update()
   end
 
   def eliminar_usuario(id_usuario) do

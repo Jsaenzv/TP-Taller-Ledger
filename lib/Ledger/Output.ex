@@ -24,6 +24,9 @@ defmodule Ledger.Output do
   end
 
   def output_ver_usuario(usuario) do
-    IO.puts(Formatter.formattear_usuario(usuario))
+    case usuario do
+      nil -> IO.puts("Usuario no encontrado")
+      _ -> IO.puts(Formatter.formattear_usuario(usuario))
+    end
   end
 end
