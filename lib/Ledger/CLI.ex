@@ -185,4 +185,22 @@ defmodule Ledger.CLI do
 
     Output.output_ver_moneda(id_moneda)
   end
+
+  def main(["alta_cuenta" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, ["id_usuario", "moneda", "monto"]) do
+      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+      _ -> nil
+    end
+
+    atributos = %{
+      monto: Map.get(params, "monto"),
+      tipo: "alta_cuenta",
+      moneda_origen_id: Map.get(params, "moneda"),
+      cuenta_origen: Map.get(params, "id_usuario")
+    }
+
+    Entidades.crear_transaccion(atributos)
+  end
 end

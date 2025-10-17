@@ -3,7 +3,7 @@ defmodule CLITest do
   import ExUnit.CaptureIO
   doctest Ledger.CLI
   alias Ledger.Repo
-  alias Ledger.Entidades.{Usuario, Moneda}
+  alias Ledger.Entidades.{Usuario, Moneda, Transaccion}
   alias Ledger.Entidades
 
   @ejecutable_path Path.join(File.cwd!(), "ledger")
@@ -416,6 +416,62 @@ defmodule CLITest do
         end)
 
       assert output =~ "Moneda no encontrada"
+    end
+  end
+
+  describe "CLI alta_cuenta" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Transaccion)
+      Repo.delete_all(Moneda)
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "creo transacción válida" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, transaccion} = Ledger.CLI.main(["alta_cuenta", "-u=#{usuario.id}", "-m=#{moneda.id}", "-a=10000"])
+
+      assert transaccion.tipo == "alta_cuenta"
+      assert transaccion.monto == 10_000.0
+      assert transaccion.moneda_origen_id == moneda.id
+      assert transaccion.cuenta_origen == usuario.id
+      assert is_nil(transaccion.moneda_destino_id)
+      assert is_nil(transaccion.cuenta_destino)
+
+      insertada = Repo.get!(Transaccion, transaccion.id)
+      assert insertada.id == transaccion.id
+    end
+
+    test "falla cuando falta flag obligatorio" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
+        Ledger.CLI.main(["alta_cuenta", "-u=#{usuario.id}", "-m=#{moneda.id}"])
+      end
+    end
+
+    test "falla cuando el usuario no existe" do
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main(["alta_cuenta", "-u=999999", "-m=#{moneda.id}", "-a=10000"])
+
+      assert {:cuenta_origen_usuario, {"Debe existir en la tabla Usuarios", _}} =
+               List.keyfind(changeset.errors, :cuenta_origen_usuario, 0)
+    end
+
+    test "falla cuando el monto es negativo" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main(["alta_cuenta", "-u=#{usuario.id}", "-m=#{moneda.id}", "-a=-10"])
+
+      assert {:monto, {"Debe ser mayor a cero", _}} = List.keyfind(changeset.errors, :monto, 0)
     end
   end
 end
