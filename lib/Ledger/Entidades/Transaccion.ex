@@ -3,27 +3,16 @@ defmodule Ledger.Entidades.Transaccion do
   import Ecto.Changeset
   import Ecto.Query
   alias Ledger.Repo
-  alias Ledger.Entidades.{Moneda, Usuario}
+  alias Ledger.Entidades.{Moneda, Cuenta}
 
   schema "transacciones" do
     field(:monto, :float)
     field(:tipo, :string)
     belongs_to(:moneda_origen, Moneda)
     belongs_to(:moneda_destino, Moneda)
-    field(:cuenta_origen, :id)
-    field(:cuenta_destino, :id)
+    belongs_to( :cuenta_origen, Cuenta)
+    belongs_to( :cuenta_destino, Cuenta)
 
-    belongs_to(:cuenta_origen_usuario, Usuario,
-      foreign_key: :cuenta_origen,
-      references: :id,
-      define_field: false
-    )
-
-    belongs_to(:cuenta_destino_usuario, Usuario,
-      foreign_key: :cuenta_destino,
-      references: :id,
-      define_field: false
-    )
 
     field(:deshacer_de_id, :id, virtual: true)
     timestamps()
