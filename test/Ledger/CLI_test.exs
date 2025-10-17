@@ -384,7 +384,6 @@ defmodule CLITest do
   end
 
   describe "CLI ver_moneda" do
-
     setup do
       :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
       Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
@@ -432,7 +431,9 @@ defmodule CLITest do
     test "creo alta_cuenta válida" do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
-      {:ok, transaccion} = Ledger.CLI.main(["alta_cuenta", "-u=#{usuario.id}", "-m=#{moneda.id}", "-a=10000"])
+
+      {:ok, transaccion} =
+        Ledger.CLI.main(["alta_cuenta", "-u=#{usuario.id}", "-m=#{moneda.id}", "-a=10000"])
 
       assert transaccion.tipo == "alta_cuenta"
       assert transaccion.monto == 10_000.0
@@ -489,7 +490,15 @@ defmodule CLITest do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
-      {:ok, transaccion} = Ledger.CLI.main(["realizar_transferencia", "-o=#{usuario_origen.id}", "-d=#{usuario_destino.id}", "-m=#{moneda.id}", "-a=10000"])
+
+      {:ok, transaccion} =
+        Ledger.CLI.main([
+          "realizar_transferencia",
+          "-o=#{usuario_origen.id}",
+          "-d=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=10000"
+        ])
 
       assert transaccion.tipo == "transferencia"
       assert transaccion.monto == 10_000.0
@@ -507,7 +516,12 @@ defmodule CLITest do
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
       assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
-        Ledger.CLI.main(["realizar_transferencia", "-o=#{usuario_origen.id}", "-m=#{moneda.id}", "-a=10000"])
+        Ledger.CLI.main([
+          "realizar_transferencia",
+          "-o=#{usuario_origen.id}",
+          "-m=#{moneda.id}",
+          "-a=10000"
+        ])
       end
     end
 
@@ -561,7 +575,10 @@ defmodule CLITest do
       assert Enum.any?(
                [:moneda_origen, :moneda_destino],
                fn campo ->
-                 match?({^campo, {"Debe existir en la tabla Monedas", _}}, List.keyfind(changeset.errors, campo, 0))
+                 match?(
+                   {^campo, {"Debe existir en la tabla Monedas", _}},
+                   List.keyfind(changeset.errors, campo, 0)
+                 )
                end
              )
     end
@@ -598,7 +615,15 @@ defmodule CLITest do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
       {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
-      {:ok, transaccion} = Ledger.CLI.main(["realizar_swap", "-u=#{usuario.id}", "-mo=#{moneda_origen.id}", "-md=#{moneda_destino.id}", "-a=10000"])
+
+      {:ok, transaccion} =
+        Ledger.CLI.main([
+          "realizar_swap",
+          "-u=#{usuario.id}",
+          "-mo=#{moneda_origen.id}",
+          "-md=#{moneda_destino.id}",
+          "-a=10000"
+        ])
 
       assert transaccion.tipo == "swap"
       assert transaccion.monto == 10_000.0
@@ -615,7 +640,12 @@ defmodule CLITest do
       {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
       assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
-        Ledger.CLI.main(["realizar_swap", "-u=#{usuario.id}", "-mo=#{moneda_origen.id}", "-a=10000"])
+        Ledger.CLI.main([
+          "realizar_swap",
+          "-u=#{usuario.id}",
+          "-mo=#{moneda_origen.id}",
+          "-a=10000"
+        ])
       end
     end
 
@@ -702,8 +732,18 @@ defmodule CLITest do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
-      {:ok, transferencia} = Ledger.CLI.main(["realizar_transferencia", "-o=#{usuario_origen.id}", "-d=#{usuario_destino.id}", "-m=#{moneda.id}", "-a=10000"])
-      {:ok, transferencia_deshecha} = Ledger.CLI.main(["deshacer_transaccion", "-id=#{transferencia.id}"])
+
+      {:ok, transferencia} =
+        Ledger.CLI.main([
+          "realizar_transferencia",
+          "-o=#{usuario_origen.id}",
+          "-d=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=10000"
+        ])
+
+      {:ok, transferencia_deshecha} =
+        Ledger.CLI.main(["deshacer_transaccion", "-id=#{transferencia.id}"])
 
       assert transferencia_deshecha.tipo == "reversa"
       assert transferencia_deshecha.moneda_destino_id == transferencia.moneda_origen_id
@@ -753,7 +793,8 @@ defmodule CLITest do
       assert {:error, %Ecto.Changeset{} = changeset} =
                Ledger.CLI.main(["deshacer_transaccion", "-id=#{transferencia_uno.id}"])
 
-      assert {:base, {"solo se puede deshacer la última transacción de cada cuenta involucrada", _}} =
+      assert {:base,
+              {"solo se puede deshacer la última transacción de cada cuenta involucrada", _}} =
                List.keyfind(changeset.errors, :base, 0)
     end
   end
