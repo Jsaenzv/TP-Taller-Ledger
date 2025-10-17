@@ -254,4 +254,17 @@ defmodule Ledger.CLI do
     id_transaccion = Map.get(params, "id")
     Entidades.deshacer_transaccion(id_transaccion)
   end
+
+  def main(["ver_transaccion" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, ["id"]) do
+      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+      _ -> nil
+    end
+
+    id_transaccion = Map.get(params, "id")
+
+    Output.output_ver_transaccion(id_transaccion)
+  end
 end

@@ -40,4 +40,18 @@ defmodule Ledger.Formatter do
     ]
     |> Enum.join("\n")
   end
+
+  def formattear_transaccion(%Ledger.Entidades.Transaccion{} = transaccion) do
+    [
+      "Transaccion:",
+      "  id: #{transaccion.id}",
+      "  cuenta_origen: #{transaccion.cuenta_origen}",
+      "  moneda_id: #{transaccion.moneda_origen_id}",
+      "  tipo: #{transaccion.tipo}",
+      "  monto: #{:erlang.float_to_binary(transaccion.monto, decimals: 6)}",
+      "  creado_el: #{transaccion.inserted_at}",
+      "  actualizado_el: #{transaccion.updated_at}"
+    ]
+    |> Enum.join("\n")
+  end
 end

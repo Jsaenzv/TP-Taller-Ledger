@@ -37,4 +37,11 @@ defmodule Ledger.Output do
       moneda -> IO.puts(Formatter.formatear_moneda(moneda))
     end
   end
+
+  def output_ver_transaccion(id_transaccion) do
+    case Entidades.obtener_transaccion(id_transaccion) do
+      nil -> IO.puts("Transacción no encontrada")
+      transaccion -> IO.puts(Formatter.formattear_transaccion(transaccion))
+    end
+  end
 end

@@ -757,4 +757,80 @@ defmodule CLITest do
                List.keyfind(changeset.errors, :base, 0)
     end
   end
+
+  describe "CLI ver_transaccion" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Transaccion)
+      Repo.delete_all(Moneda)
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "ver transaccion válida" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=ana", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      {:ok, transaccion} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda.id}",
+          "-a=1000"
+        ])
+
+      output =
+        capture_io(fn ->
+          assert :ok == Ledger.CLI.main(["ver_transaccion", "-id=#{transaccion.id}"])
+        end)
+
+      assert output =~ "Transaccion:"
+      assert output =~ "  id: #{transaccion.id}"
+      assert output =~ "  cuenta_origen: #{usuario.id}"
+      assert output =~ "  moneda_id: #{moneda.id}"
+      assert output =~ "  tipo: alta_cuenta"
+      assert output =~ "  monto: 1000.000000"
+    end
+
+    test "falla cuando falta flag obligatorio" do
+      assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
+        Ledger.CLI.main(["ver_transaccion"])
+      end
+    end
+
+    test "ver transaccion inexistente" do
+      output =
+        capture_io(fn ->
+          assert :ok == Ledger.CLI.main(["ver_transaccion", "-id=999999"])
+        end)
+
+      assert output =~ "Transacción no encontrada"
+    end
+
+    test "ver transaccion transferencia" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1992-02-02"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=USD", "-p=1"])
+
+      {:ok, transaccion} =
+        Ledger.CLI.main([
+          "realizar_transferencia",
+          "-o=#{usuario_origen.id}",
+          "-d=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=250"
+        ])
+
+      output =
+        capture_io(fn ->
+          assert :ok == Ledger.CLI.main(["ver_transaccion", "-id=#{transaccion.id}"])
+        end)
+
+      assert output =~ "Transaccion:"
+      assert output =~ "  id: #{transaccion.id}"
+      assert output =~ "  tipo: transferencia"
+      assert output =~ "  monto: 250.000000"
+    end
+  end
 end
