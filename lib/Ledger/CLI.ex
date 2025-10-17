@@ -223,4 +223,23 @@ defmodule Ledger.CLI do
 
     Entidades.crear_transaccion(atributos)
   end
+
+  def main(["realizar_swap" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, ["id_usuario", "monto", "id_moneda_origen", "id_moneda_destino"]) do
+      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+      _ -> nil
+    end
+
+    atributos = %{
+      monto: Map.get(params, "monto"),
+      tipo: "swap",
+      moneda_origen_id: Map.get(params, "id_moneda_origen"),
+      moneda_destino_id: Map.get(params, "id_moneda_destino"),
+      cuenta_origen: Map.get(params, "id_usuario"),
+    }
+
+    Entidades.crear_transaccion(atributos)
+  end
 end

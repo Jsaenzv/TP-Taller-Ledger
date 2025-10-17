@@ -485,7 +485,7 @@ defmodule CLITest do
       :ok
     end
 
-    test "creo realizar_transferencia válida" do
+    test "realizo transferencia válida" do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
@@ -577,6 +577,110 @@ defmodule CLITest do
                  "-o=#{usuario_origen.id}",
                  "-d=#{usuario_destino.id}",
                  "-m=#{moneda.id}",
+                 "-a=-10"
+               ])
+
+      assert {:monto, {"Debe ser mayor a cero", _}} = List.keyfind(changeset.errors, :monto, 0)
+    end
+  end
+
+  describe "CLI realizar_swap" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Transaccion)
+      Repo.delete_all(Moneda)
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "realizo swap válido" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
+      {:ok, transaccion} = Ledger.CLI.main(["realizar_swap", "-u=#{usuario.id}", "-mo=#{moneda_origen.id}", "-md=#{moneda_destino.id}", "-a=10000"])
+
+      assert transaccion.tipo == "swap"
+      assert transaccion.monto == 10_000.0
+      assert transaccion.moneda_origen_id == moneda_origen.id
+      assert transaccion.cuenta_origen == usuario.id
+      assert transaccion.moneda_destino_id == moneda_destino.id
+
+      insertada = Repo.get!(Transaccion, transaccion.id)
+      assert insertada.id == transaccion.id
+    end
+
+    test "falla cuando falta flag obligatorio" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
+        Ledger.CLI.main(["realizar_swap", "-u=#{usuario.id}", "-mo=#{moneda_origen.id}", "-a=10000"])
+      end
+    end
+
+    test "falla cuando el usuario no existe" do
+      {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_swap",
+                 "-u=999999",
+                 "-mo=#{moneda_origen.id}",
+                 "-md=#{moneda_destino.id}",
+                 "-a=10000"
+               ])
+
+      assert {:cuenta_origen_usuario, {"Debe existir en la tabla Usuarios", _}} =
+               List.keyfind(changeset.errors, :cuenta_origen_usuario, 0)
+    end
+
+    test "falla cuando la moneda origen no existe" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_swap",
+                 "-u=#{usuario.id}",
+                 "-mo=999999",
+                 "-md=#{moneda_destino.id}",
+                 "-a=10000"
+               ])
+
+      assert {:moneda_origen, {"Debe existir en la tabla Monedas", _}} =
+               List.keyfind(changeset.errors, :moneda_origen, 0)
+    end
+
+    test "falla cuando la moneda destino no existe" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_swap",
+                 "-u=#{usuario.id}",
+                 "-mo=#{moneda_origen.id}",
+                 "-md=999999",
+                 "-a=10000"
+               ])
+
+      assert {:moneda_destino, {"Debe existir en la tabla Monedas", _}} =
+               List.keyfind(changeset.errors, :moneda_destino, 0)
+    end
+
+    test "falla cuando el monto es negativo" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_swap",
+                 "-u=#{usuario.id}",
+                 "-mo=#{moneda_origen.id}",
+                 "-md=#{moneda_destino.id}",
                  "-a=-10"
                ])
 
