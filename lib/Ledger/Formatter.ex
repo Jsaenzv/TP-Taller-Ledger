@@ -45,7 +45,7 @@ defmodule Ledger.Formatter do
     [
       "Transaccion:",
       "  id: #{transaccion.id}",
-      "  cuenta_origen: #{transaccion.cuenta_origen}",
+      "  cuenta_origen: #{transaccion.cuenta_origen_id}",
       "  moneda_id: #{transaccion.moneda_origen_id}",
       "  tipo: #{transaccion.tipo}",
       "  monto: #{:erlang.float_to_binary(transaccion.monto, decimals: 6)}",

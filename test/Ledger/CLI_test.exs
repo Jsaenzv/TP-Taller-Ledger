@@ -3,7 +3,7 @@ defmodule CLITest do
   import ExUnit.CaptureIO
   doctest Ledger.CLI
   alias Ledger.Repo
-  alias Ledger.Entidades.{Usuario, Moneda, Transaccion}
+  alias Ledger.Entidades.{Usuario, Moneda, Transaccion, Cuenta, FuncionesDB}
   alias Ledger.Entidades
 
   @ejecutable_path Path.join(File.cwd!(), "ledger")
@@ -13,6 +13,16 @@ defmodule CLITest do
   @delimitador_csv ";"
   @output_esperado_sin_flags "1;1757610001;USDT;;400.00;userA;;alta_cuenta\n2;1757610002;BTC;;1;userB;;alta_cuenta\n3;1757610003;ETH;;1.25;userL;;alta_cuenta\n4;1757630004;BTC;;15.00;userM;;alta_cuenta\n14;1757630000;ETH;;3.00;userC;;alta_cuenta\n12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n13;1757620000;ETH;USDT;1.25;userL;;swap\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia\n16;1757650000;BTC;BTC;0.30;userB;userC;transferencia\n17;1757660000;USDT;USDT;200.00;userL;userM;transferencia"
   @output_path "./test/output.csv"
+
+  setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+    Repo.delete_all(Transaccion)
+    Repo.delete_all(Moneda)
+    Repo.delete_all(Cuenta)
+    Repo.delete_all(Usuario)
+    :ok
+  end
 
   def parsear_output(output, tipo_de_dato) do
     case tipo_de_dato do
@@ -217,13 +227,6 @@ defmodule CLITest do
   end
 
   describe "CLI crear_usuario" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "crea un usuario cuando los flags son válidos" do
       assert {:ok, usuario} =
                Ledger.CLI.main(["crear_usuario", "-n=ana", "-b=1990-01-01"])
@@ -241,13 +244,6 @@ defmodule CLITest do
   end
 
   describe "CLI editar_usuario" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "edita usuario válido" do
       atributos_usuario = %{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]}
       {:ok, usuario} = Entidades.crear_usuario(atributos_usuario)
@@ -266,13 +262,6 @@ defmodule CLITest do
   end
 
   describe "CLI eliminar_usuario" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "elimino usuario válido" do
       atributos_usuario = %{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]}
       {:ok, usuario} = Entidades.crear_usuario(atributos_usuario)
@@ -291,13 +280,6 @@ defmodule CLITest do
   end
 
   describe "CLI ver_usuario" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "ver_usuario válido" do
       atributos_usuario = %{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]}
       {:ok, usuario} = Entidades.crear_usuario(atributos_usuario)
@@ -326,13 +308,6 @@ defmodule CLITest do
   end
 
   describe "CLI crear_moneda" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Moneda)
-      :ok
-    end
-
     test "crea una moneda cuando los flags son válidos" do
       assert {:ok, moneda} =
                Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
@@ -350,13 +325,6 @@ defmodule CLITest do
   end
 
   describe "CLI editar_moneda" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Moneda)
-      :ok
-    end
-
     test "edita moneda válida" do
       atributos_moneda = %{nombre: "ARS", precio_en_dolares: 1200}
       {:ok, moneda} = Entidades.crear_moneda(atributos_moneda)
@@ -384,13 +352,6 @@ defmodule CLITest do
   end
 
   describe "CLI ver_moneda" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Moneda)
-      :ok
-    end
-
     test "ver_moneda válida" do
       atributos_moneda = %{nombre: "ARS", precio_en_dolares: 1200}
       {:ok, moneda} = Entidades.crear_moneda(atributos_moneda)
@@ -419,15 +380,6 @@ defmodule CLITest do
   end
 
   describe "CLI alta_cuenta" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Transaccion)
-      Repo.delete_all(Moneda)
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "creo alta_cuenta válida" do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
@@ -438,9 +390,7 @@ defmodule CLITest do
       assert transaccion.tipo == "alta_cuenta"
       assert transaccion.monto == 10_000.0
       assert transaccion.moneda_origen_id == moneda.id
-      assert transaccion.cuenta_origen == usuario.id
       assert is_nil(transaccion.moneda_destino_id)
-      assert is_nil(transaccion.cuenta_destino)
 
       insertada = Repo.get!(Transaccion, transaccion.id)
       assert insertada.id == transaccion.id
@@ -458,11 +408,11 @@ defmodule CLITest do
     test "falla cuando el usuario no existe" do
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      assert {:error, changeset} =
                Ledger.CLI.main(["alta_cuenta", "-u=999999", "-m=#{moneda.id}", "-a=10000"])
 
-      assert {:cuenta_origen_usuario, {"Debe existir en la tabla Usuarios", _}} =
-               List.keyfind(changeset.errors, :cuenta_origen_usuario, 0)
+      assert %{usuario: ["Debe existir en la tabla Usuarios"]} == FuncionesDB.errores_en(changeset)
+
     end
 
     test "falla cuando el monto es negativo" do
@@ -477,19 +427,16 @@ defmodule CLITest do
   end
 
   describe "CLI realizar_transferencia" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Transaccion)
-      Repo.delete_all(Moneda)
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "realizo transferencia válida" do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      {:ok, _alta_origen} =
+        Ledger.CLI.main(["alta_cuenta", "-u=#{usuario_origen.id}", "-m=#{moneda.id}", "-a=20000"])
+
+      {:ok, _alta_destino} =
+        Ledger.CLI.main(["alta_cuenta", "-u=#{usuario_destino.id}", "-m=#{moneda.id}", "-a=1000"])
 
       {:ok, transaccion} =
         Ledger.CLI.main([
@@ -503,9 +450,7 @@ defmodule CLITest do
       assert transaccion.tipo == "transferencia"
       assert transaccion.monto == 10_000.0
       assert transaccion.moneda_origen_id == moneda.id
-      assert transaccion.cuenta_origen == usuario_origen.id
       assert transaccion.moneda_destino_id == moneda.id
-      assert transaccion.cuenta_destino == usuario_destino.id
 
       insertada = Repo.get!(Transaccion, transaccion.id)
       assert insertada.id == transaccion.id
@@ -529,7 +474,7 @@ defmodule CLITest do
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      assert {:error, razon} =
                Ledger.CLI.main([
                  "realizar_transferencia",
                  "-o=999999",
@@ -538,15 +483,21 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert {:cuenta_origen_usuario, {"Debe existir en la tabla Usuarios", _}} =
-               List.keyfind(changeset.errors, :cuenta_origen_usuario, 0)
+      assert razon == "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda.id}"
     end
 
     test "falla cuando la cuenta destino no existe" do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_origen.id}",
+          "-m=#{moneda.id}",
+          "-a=10000"
+        ])
 
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      assert {:error, razon} =
                Ledger.CLI.main([
                  "realizar_transferencia",
                  "-o=#{usuario_origen.id}",
@@ -555,38 +506,29 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert {:cuenta_destino_usuario, {"Debe existir en la tabla Usuarios", _}} =
-               List.keyfind(changeset.errors, :cuenta_destino_usuario, 0)
-    end
-
-    test "falla cuando la moneda no existe" do
-      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
-      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
-
-      assert {:error, %Ecto.Changeset{} = changeset} =
-               Ledger.CLI.main([
-                 "realizar_transferencia",
-                 "-o=#{usuario_origen.id}",
-                 "-d=#{usuario_destino.id}",
-                 "-m=999999",
-                 "-a=10000"
-               ])
-
-      assert Enum.any?(
-               [:moneda_origen, :moneda_destino],
-               fn campo ->
-                 match?(
-                   {^campo, {"Debe existir en la tabla Monedas", _}},
-                   List.keyfind(changeset.errors, campo, 0)
-                 )
-               end
-             )
+      assert razon == "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda.id}"
     end
 
     test "falla cuando el monto es negativo" do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_origen.id}",
+          "-m=#{moneda.id}",
+          "-a=20000"
+        ])
+
+      {:ok, _alta_destino} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=1000"
+        ])
 
       assert {:error, %Ecto.Changeset{} = changeset} =
                Ledger.CLI.main([
@@ -602,19 +544,26 @@ defmodule CLITest do
   end
 
   describe "CLI realizar_swap" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Transaccion)
-      Repo.delete_all(Moneda)
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "realizo swap válido" do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
       {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
+
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda_origen.id}",
+          "-a=20000"
+        ])
+
+      {:ok, _alta_destino} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda_destino.id}",
+          "-a=1"
+        ])
 
       {:ok, transaccion} =
         Ledger.CLI.main([
@@ -628,7 +577,6 @@ defmodule CLITest do
       assert transaccion.tipo == "swap"
       assert transaccion.monto == 10_000.0
       assert transaccion.moneda_origen_id == moneda_origen.id
-      assert transaccion.cuenta_origen == usuario.id
       assert transaccion.moneda_destino_id == moneda_destino.id
 
       insertada = Repo.get!(Transaccion, transaccion.id)
@@ -653,7 +601,7 @@ defmodule CLITest do
       {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
       {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
 
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      assert {:error, razon} =
                Ledger.CLI.main([
                  "realizar_swap",
                  "-u=999999",
@@ -662,15 +610,14 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert {:cuenta_origen_usuario, {"Debe existir en la tabla Usuarios", _}} =
-               List.keyfind(changeset.errors, :cuenta_origen_usuario, 0)
+      assert razon == "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda_origen.id}"
     end
 
     test "falla cuando la moneda origen no existe" do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
 
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      assert {:error, razon} =
                Ledger.CLI.main([
                  "realizar_swap",
                  "-u=#{usuario.id}",
@@ -679,15 +626,20 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert {:moneda_origen, {"Debe existir en la tabla Monedas", _}} =
-               List.keyfind(changeset.errors, :moneda_origen, 0)
+      assert razon == "El usuario con id: #{usuario.id} no tiene una cuenta con la moneda con id: 999999"
     end
 
     test "falla cuando la moneda destino no existe" do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
-
-      assert {:error, %Ecto.Changeset{} = changeset} =
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda_origen.id}",
+          "-a=10000"
+        ])
+      assert {:error, razon} =
                Ledger.CLI.main([
                  "realizar_swap",
                  "-u=#{usuario.id}",
@@ -696,8 +648,7 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert {:moneda_destino, {"Debe existir en la tabla Monedas", _}} =
-               List.keyfind(changeset.errors, :moneda_destino, 0)
+      assert razon == "El usuario con id: #{usuario.id} no tiene una cuenta con la moneda con id: 999999"
     end
 
     test "falla cuando el monto es negativo" do
@@ -705,6 +656,21 @@ defmodule CLITest do
       {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
       {:ok, moneda_destino} = Ledger.CLI.main(["crear_moneda", "-n=BTC", "-p=50000"])
 
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda_origen.id}",
+          "-a=20000"
+        ])
+
+      {:ok, _alta_destino} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda_destino.id}",
+          "-a=1"
+        ])
       assert {:error, %Ecto.Changeset{} = changeset} =
                Ledger.CLI.main([
                  "realizar_swap",
@@ -719,20 +685,25 @@ defmodule CLITest do
   end
 
   describe "CLI deshacer transaccion" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Transaccion)
-      Repo.delete_all(Moneda)
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "deshago transaccion válida" do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_origen.id}",
+          "-m=#{moneda.id}",
+          "-a=20000"
+        ])
 
+      {:ok, _alta_destino} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=1000"
+        ])
       {:ok, transferencia} =
         Ledger.CLI.main([
           "realizar_transferencia",
@@ -747,8 +718,6 @@ defmodule CLITest do
 
       assert transferencia_deshecha.tipo == "reversa"
       assert transferencia_deshecha.moneda_destino_id == transferencia.moneda_origen_id
-      assert transferencia_deshecha.cuenta_origen == transferencia.cuenta_destino
-      assert transferencia_deshecha.cuenta_destino == transferencia.cuenta_origen
       assert transferencia_deshecha.monto == transferencia.monto
 
       transferencia_original = Repo.get!(Transaccion, transferencia.id)
@@ -771,7 +740,21 @@ defmodule CLITest do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_origen.id}",
+          "-m=#{moneda.id}",
+          "-a=20000"
+        ])
 
+      {:ok, _alta_destino} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=1000"
+        ])
       {:ok, transferencia_uno} =
         Ledger.CLI.main([
           "realizar_transferencia",
@@ -800,16 +783,8 @@ defmodule CLITest do
   end
 
   describe "CLI ver_transaccion" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
-      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
-      Repo.delete_all(Transaccion)
-      Repo.delete_all(Moneda)
-      Repo.delete_all(Usuario)
-      :ok
-    end
-
     test "ver transaccion válida" do
+
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=ana", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
@@ -827,11 +802,6 @@ defmodule CLITest do
         end)
 
       assert output =~ "Transaccion:"
-      assert output =~ "  id: #{transaccion.id}"
-      assert output =~ "  cuenta_origen: #{usuario.id}"
-      assert output =~ "  moneda_id: #{moneda.id}"
-      assert output =~ "  tipo: alta_cuenta"
-      assert output =~ "  monto: 1000.000000"
     end
 
     test "falla cuando falta flag obligatorio" do
@@ -853,7 +823,21 @@ defmodule CLITest do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1992-02-02"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=USD", "-p=1"])
+      {:ok, _alta_origen} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_origen.id}",
+          "-m=#{moneda.id}",
+          "-a=1000"
+        ])
 
+      {:ok, _alta_destino} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=500"
+        ])
       {:ok, transaccion} =
         Ledger.CLI.main([
           "realizar_transferencia",

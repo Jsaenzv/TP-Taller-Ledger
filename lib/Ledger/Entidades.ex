@@ -32,6 +32,8 @@ defmodule Ledger.Entidades do
   def eliminar_usuario(id_usuario) do
     usuario = Repo.get(Usuario, id_usuario)
 
+    Repo.delete_all(from(c in Cuenta, where: c.usuario_id == ^id_usuario))
+
     case usuario do
       nil -> {:error, :not_found}
       _ -> Repo.delete(usuario)
@@ -145,7 +147,12 @@ defmodule Ledger.Entidades do
     usuario_id = Map.get(atributos, :cuenta_origen)
     moneda_id = Map.get(atributos, :moneda_origen_id)
     monto = Map.get(atributos, :monto)
-    {:ok, cuenta} = crear_cuenta(%{usuario_id: usuario_id, moneda_id: moneda_id, balance: monto})
+    cuenta =
+      case crear_cuenta(%{usuario_id: usuario_id, moneda_id: moneda_id, balance: monto}) do
+        {:ok, cuenta} -> cuenta
+        {:error, %Changeset{} = changeset} -> Repo.rollback(changeset)
+        {:error, razon} -> Repo.rollback(razon)
+      end
 
     atributos
     |> Map.put(:cuenta_origen_id, cuenta.id)
@@ -158,9 +165,18 @@ defmodule Ledger.Entidades do
     usuario_destino = Map.get(atributos, :cuenta_destino)
     moneda_origen_id = Map.get(atributos, :moneda_origen_id)
     moneda_destino_id = Map.get(atributos, :moneda_destino_id)
-    monto = Map.get(atributos, :monto)
-    {:ok, cuenta_origen} = obtener_cuenta(usuario_origen, moneda_origen_id)
-    {:ok, cuenta_destino} = obtener_cuenta(usuario_destino, moneda_destino_id)
+    {monto, _} = Float.parse(Map.get(atributos, :monto))
+    cuenta_origen =
+      case obtener_cuenta(usuario_origen, moneda_origen_id) do
+        {:ok, cuenta_origen} -> cuenta_origen
+        {:error, razon} -> Repo.rollback(razon)
+      end
+
+    cuenta_destino =
+      case obtener_cuenta(usuario_destino, moneda_destino_id) do
+        {:ok, cuenta_destino} -> cuenta_destino
+        {:error, razon} -> Repo.rollback(razon)
+      end
 
     modificar_cuenta_balance(cuenta_origen.id, -monto)
     modificar_cuenta_balance(cuenta_destino.id, monto)
@@ -177,9 +193,18 @@ defmodule Ledger.Entidades do
     usuario_id = Map.get(atributos, :cuenta_origen)
     moneda_origen_id = Map.get(atributos, :moneda_origen_id)
     moneda_destino_id = Map.get(atributos, :moneda_destino_id)
-    monto = Map.get(atributos, :monto)
-    {:ok, cuenta_origen} = obtener_cuenta(usuario_id, moneda_origen_id)
-    {:ok, cuenta_destino} = obtener_cuenta(usuario_id, moneda_destino_id)
+    {monto, _} = Float.parse(Map.get(atributos, :monto))
+    cuenta_origen =
+      case obtener_cuenta(usuario_id, moneda_origen_id) do
+        {:ok, cuenta_origen} -> cuenta_origen
+        {:error, razon} -> Repo.rollback(razon)
+      end
+
+    cuenta_destino =
+      case obtener_cuenta(usuario_id, moneda_destino_id) do
+        {:ok, cuenta_destino} -> cuenta_destino
+        {:error, razon} -> Repo.rollback(razon)
+      end
 
     modificar_cuenta_balance(cuenta_origen.id, -monto)
     modificar_cuenta_balance(cuenta_destino.id, monto)
