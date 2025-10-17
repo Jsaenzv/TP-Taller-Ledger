@@ -382,4 +382,40 @@ defmodule CLITest do
       end
     end
   end
+
+  describe "CLI ver_moneda" do
+
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Moneda)
+      :ok
+    end
+
+    test "ver_moneda válida" do
+      atributos_moneda = %{nombre: "ARS", precio_en_dolares: 1200}
+      {:ok, moneda} = Entidades.crear_moneda(atributos_moneda)
+
+      output =
+        capture_io(fn ->
+          assert :ok == Ledger.CLI.main(["ver_moneda", "-id=#{moneda.id}"])
+        end)
+
+      assert output =~ "Moneda:"
+      assert output =~ "  id: #{moneda.id}"
+      assert output =~ "  nombre: #{moneda.nombre}"
+      assert output =~ "  precio_en_dolares: 1200.000000"
+      assert output =~ "  creado_el:"
+      assert output =~ "  actualizado_el:"
+    end
+
+    test "ver_moneda inexistente" do
+      output =
+        capture_io(fn ->
+          Ledger.CLI.main(["ver_moneda", "-id=999999"])
+        end)
+
+      assert output =~ "Moneda no encontrada"
+    end
+  end
 end

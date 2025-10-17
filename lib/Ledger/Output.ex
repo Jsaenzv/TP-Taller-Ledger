@@ -1,6 +1,7 @@
 defmodule Ledger.Output do
   alias Ledger.Formatter
   alias Ledger.Constantes
+  alias Ledger.Entidades
 
   def output_transacciones(output, path) do
     default_output_path = Constantes.default_output_path()
@@ -27,6 +28,13 @@ defmodule Ledger.Output do
     case usuario do
       nil -> IO.puts("Usuario no encontrado")
       _ -> IO.puts(Formatter.formattear_usuario(usuario))
+    end
+  end
+
+  def output_ver_moneda(id_moneda) do
+    case Entidades.obtener_moneda(id_moneda) do
+      nil -> IO.puts("Moneda no encontrada")
+      moneda -> IO.puts(Formatter.formatear_moneda(moneda))
     end
   end
 end

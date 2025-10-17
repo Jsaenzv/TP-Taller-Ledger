@@ -159,4 +159,30 @@ defmodule Ledger.CLI do
 
     Entidades.editar_moneda(id_moneda, precio_en_dolares)
   end
+
+  def main(["borrar moneda" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, ["id"]) do
+      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+      _ -> nil
+    end
+
+    id_moneda = Map.get(params, "id")
+
+    Entidades.eliminar_moneda(id_moneda)
+  end
+
+  def main(["ver_moneda" | flags]) do
+    params = Parser.parsear_flags(flags)
+
+    case Validador.validar_flags(params, ["id"]) do
+      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+      _ -> nil
+    end
+
+    id_moneda = Map.get(params, "id")
+
+    Output.output_ver_moneda(id_moneda)
+  end
 end
