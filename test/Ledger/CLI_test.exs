@@ -687,4 +687,74 @@ defmodule CLITest do
       assert {:monto, {"Debe ser mayor a cero", _}} = List.keyfind(changeset.errors, :monto, 0)
     end
   end
+
+  describe "CLI deshacer transaccion" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Transaccion)
+      Repo.delete_all(Moneda)
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "deshago transaccion válida" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, transferencia} = Ledger.CLI.main(["realizar_transferencia", "-o=#{usuario_origen.id}", "-d=#{usuario_destino.id}", "-m=#{moneda.id}", "-a=10000"])
+      {:ok, transferencia_deshecha} = Ledger.CLI.main(["deshacer_transaccion", "-id=#{transferencia.id}"])
+
+      assert transferencia_deshecha.tipo == "reversa"
+      assert transferencia_deshecha.moneda_destino_id == transferencia.moneda_origen_id
+      assert transferencia_deshecha.cuenta_origen == transferencia.cuenta_destino
+      assert transferencia_deshecha.cuenta_destino == transferencia.cuenta_origen
+      assert transferencia_deshecha.monto == transferencia.monto
+
+      transferencia_original = Repo.get!(Transaccion, transferencia.id)
+      reversa = Repo.get!(Transaccion, transferencia_deshecha.id)
+      assert reversa.id == transferencia_deshecha.id
+      assert transferencia_original.id == transferencia_deshecha.deshacer_de_id
+    end
+
+    test "falla cuando falta flag obligatorio" do
+      assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
+        Ledger.CLI.main(["deshacer_transaccion"])
+      end
+    end
+
+    test "falla cuando la transaccion no existe" do
+      assert {:error, :not_found} == Ledger.CLI.main(["deshacer_transaccion", "-id=999999"])
+    end
+
+    test "falla cuando la transaccion no es la ultima de las cuentas" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      {:ok, transferencia_uno} =
+        Ledger.CLI.main([
+          "realizar_transferencia",
+          "-o=#{usuario_origen.id}",
+          "-d=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=10000"
+        ])
+
+      {:ok, _transferencia_dos} =
+        Ledger.CLI.main([
+          "realizar_transferencia",
+          "-o=#{usuario_origen.id}",
+          "-d=#{usuario_destino.id}",
+          "-m=#{moneda.id}",
+          "-a=5000"
+        ])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main(["deshacer_transaccion", "-id=#{transferencia_uno.id}"])
+
+      assert {:base, {"solo se puede deshacer la última transacción de cada cuenta involucrada", _}} =
+               List.keyfind(changeset.errors, :base, 0)
+    end
+  end
 end
