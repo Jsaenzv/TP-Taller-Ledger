@@ -1,6 +1,8 @@
 defmodule Ledger.Entidades do
+  alias Ecto.Changeset
   alias Ledger.Entidades.{Cuenta, Moneda, Transaccion, Usuario}
   alias Ledger.Repo
+  import Ecto.Query
 
   def obtener_usuario(id_usuario) do
     Repo.get(Usuario, id_usuario)
@@ -37,7 +39,28 @@ defmodule Ledger.Entidades do
   end
 
   def crear_transaccion(atributos) when is_map(atributos) do
-    Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
+    tipo = Map.get(atributos, :tipo)
+
+    Repo.transaction(fn ->
+      resultado =
+        case tipo do
+          "alta_cuenta" -> crear_transaccion_alta(atributos)
+          "transferencia" -> crear_transaccion_transferencia(atributos)
+          "swap" -> crear_transaccion_swap(atributos)
+          _ -> insertar_transaccion(atributos)
+        end
+
+      case resultado do
+        {:ok, transaccion} -> transaccion
+        {:error, %Changeset{} = changeset} -> Repo.rollback(changeset)
+        {:error, razon} -> Repo.rollback(razon)
+      end
+    end)
+    |> case do
+      {:ok, transaccion} -> {:ok, transaccion}
+      {:error, %Changeset{} = changeset} -> {:error, changeset}
+      {:error, razon} -> {:error, razon}
+    end
   end
 
   def crear_moneda(atributos) when is_map(atributos) do
@@ -46,6 +69,18 @@ defmodule Ledger.Entidades do
 
   def crear_cuenta(atributos) when is_map(atributos) do
     Cuenta.changeset(%Cuenta{}, atributos) |> Repo.insert()
+  end
+
+  def obtener_cuenta(filtros) when is_map(filtros) do
+    query =
+      Enum.reduce(filtros, from(c in Cuenta), fn {campo, valor}, acc ->
+        from(c in acc, where: field(c, ^campo) == ^valor)
+      end)
+
+    case Repo.one(query) do
+      nil -> {:error, :not_found}
+      cuenta -> {:ok, cuenta}
+    end
   end
 
   def editar_moneda(%Moneda{} = moneda, precio_en_dolares) do
@@ -80,6 +115,20 @@ defmodule Ledger.Entidades do
     end
   end
 
+  def modificar_cuenta_balance(id_cuenta, delta_balance) do
+    case Repo.get(Cuenta, id_cuenta) do
+      nil ->
+        {:error, :not_found}
+
+      %Cuenta{} = cuenta ->
+        nuevo_balance = (cuenta.balance || 0.0) + delta_balance
+
+        cuenta
+        |> Changeset.change(%{balance: nuevo_balance})
+        |> Repo.update()
+    end
+  end
+
   def deshacer_transaccion(id_transaccion) do
     case Repo.get(Transaccion, id_transaccion) do
       nil ->
@@ -89,6 +138,72 @@ defmodule Ledger.Entidades do
         transaccion
         |> Transaccion.reversal_changeset()
         |> Repo.insert()
+    end
+  end
+
+  defp crear_transaccion_alta(atributos) do
+    usuario_id = Map.get(atributos, :cuenta_origen)
+    moneda_id = Map.get(atributos, :moneda_origen_id)
+    monto = Map.get(atributos, :monto)
+    {:ok, cuenta} = crear_cuenta(%{usuario_id: usuario_id, moneda_id: moneda_id, balance: monto})
+
+    atributos
+    |> Map.put(:cuenta_origen_id, cuenta.id)
+    |> Map.put(:moneda_origen_id, moneda_id)
+    |> insertar_transaccion()
+  end
+
+  defp crear_transaccion_transferencia(atributos) do
+    usuario_origen = Map.get(atributos, :cuenta_origen)
+    usuario_destino = Map.get(atributos, :cuenta_destino)
+    moneda_origen_id = Map.get(atributos, :moneda_origen_id)
+    moneda_destino_id = Map.get(atributos, :moneda_destino_id)
+    monto = Map.get(atributos, :monto)
+    {:ok, cuenta_origen} = obtener_cuenta(usuario_origen, moneda_origen_id)
+    {:ok, cuenta_destino} = obtener_cuenta(usuario_destino, moneda_destino_id)
+
+    modificar_cuenta_balance(cuenta_origen.id, -monto)
+    modificar_cuenta_balance(cuenta_destino.id, monto)
+
+    atributos
+    |> Map.put(:cuenta_origen_id, cuenta_origen.id)
+    |> Map.put(:cuenta_destino_id, cuenta_destino.id)
+    |> Map.put(:moneda_origen_id, moneda_origen_id)
+    |> Map.put(:moneda_destino_id, moneda_destino_id)
+    |> insertar_transaccion()
+  end
+
+  defp crear_transaccion_swap(atributos) do
+    usuario_id = Map.get(atributos, :cuenta_origen)
+    moneda_origen_id = Map.get(atributos, :moneda_origen_id)
+    moneda_destino_id = Map.get(atributos, :moneda_destino_id)
+    monto = Map.get(atributos, :monto)
+    {:ok, cuenta_origen} = obtener_cuenta(usuario_id, moneda_origen_id)
+    {:ok, cuenta_destino} = obtener_cuenta(usuario_id, moneda_destino_id)
+
+    modificar_cuenta_balance(cuenta_origen.id, -monto)
+    modificar_cuenta_balance(cuenta_destino.id, monto)
+
+    atributos
+    |> Map.put(:cuenta_origen_id, cuenta_origen.id)
+    |> Map.put(:cuenta_destino_id, cuenta_destino.id)
+    |> Map.put(:moneda_origen_id, moneda_origen_id)
+    |> Map.put(:moneda_destino_id, moneda_destino_id)
+    |> insertar_transaccion()
+  end
+
+  defp insertar_transaccion(atributos) do
+    Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
+  end
+
+  defp obtener_cuenta(usuario_id, moneda_id) do
+    case obtener_cuenta(%{usuario_id: usuario_id, moneda_id: moneda_id}) do
+      {:ok, cuenta} ->
+        {:ok, cuenta}
+
+      {:error, :not_found} ->
+        {:error,
+         "El usuario con id: #{usuario_id} no tiene una cuenta con la moneda con id: #{moneda_id}"}
     end
   end
 end

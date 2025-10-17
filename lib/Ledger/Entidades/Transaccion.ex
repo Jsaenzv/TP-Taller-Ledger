@@ -3,17 +3,15 @@ defmodule Ledger.Entidades.Transaccion do
   import Ecto.Changeset
   import Ecto.Query
   alias Ledger.Repo
-  alias Ledger.Entidades.{Moneda, Cuenta}
+  alias Ledger.Entidades.{Cuenta, Moneda}
 
   schema "transacciones" do
     field(:monto, :float)
     field(:tipo, :string)
     belongs_to(:moneda_origen, Moneda)
     belongs_to(:moneda_destino, Moneda)
-    belongs_to( :cuenta_origen, Cuenta)
-    belongs_to( :cuenta_destino, Cuenta)
-
-
+    belongs_to(:cuenta_origen, Cuenta)
+    belongs_to(:cuenta_destino, Cuenta)
     field(:deshacer_de_id, :id, virtual: true)
     timestamps()
   end
@@ -35,8 +33,8 @@ defmodule Ledger.Entidades.Transaccion do
     |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
     |> assoc_constraint(:moneda_origen, message: "Debe existir en la tabla Monedas")
     |> assoc_constraint(:moneda_destino, message: "Debe existir en la tabla Monedas")
-    |> assoc_constraint(:cuenta_origen_id, message: "Debe existir en la tabla Cuentas")
-    |> assoc_constraint(:cuenta_destino_id, message: "Debe existir en la tabla Cuentas")
+    |> assoc_constraint(:cuenta_origen, message: "Debe existir en la tabla Cuentas")
+    |> assoc_constraint(:cuenta_destino, message: "Debe existir en la tabla Cuentas")
   end
 
   defp validar_destinos_si_transferencia(changeset) do
@@ -77,10 +75,10 @@ defmodule Ledger.Entidades.Transaccion do
         end
       end)
       |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
-      |> assoc_constraint(:moneda_origen_id, message: "Debe existir en la tabla Monedas")
-      |> assoc_constraint(:moneda_destino_id, message: "Debe existir en la tabla Monedas")
-      |> assoc_constraint(:cuenta_origen_id, message: "Debe existir en la tabla Cuentas")
-      |> assoc_constraint(:cuenta_destino_id, message: "Debe existir en la tabla Cuentas")
+      |> assoc_constraint(:moneda_origen, message: "Debe existir en la tabla Monedas")
+      |> assoc_constraint(:moneda_destino, message: "Debe existir en la tabla Monedas")
+      |> assoc_constraint(:cuenta_origen, message: "Debe existir en la tabla Cuentas")
+      |> assoc_constraint(:cuenta_destino, message: "Debe existir en la tabla Cuentas")
       |> verificar_ultima_transaccion(original, repo)
     end)
   end
