@@ -429,7 +429,7 @@ defmodule CLITest do
       :ok
     end
 
-    test "creo transacción válida" do
+    test "creo alta_cuenta válida" do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
       {:ok, transaccion} = Ledger.CLI.main(["alta_cuenta", "-u=#{usuario.id}", "-m=#{moneda.id}", "-a=10000"])
@@ -470,6 +470,115 @@ defmodule CLITest do
 
       assert {:error, %Ecto.Changeset{} = changeset} =
                Ledger.CLI.main(["alta_cuenta", "-u=#{usuario.id}", "-m=#{moneda.id}", "-a=-10"])
+
+      assert {:monto, {"Debe ser mayor a cero", _}} = List.keyfind(changeset.errors, :monto, 0)
+    end
+  end
+
+  describe "CLI realizar_transferencia" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Ledger.Repo)
+      Ecto.Adapters.SQL.Sandbox.mode(Ledger.Repo, {:shared, self()})
+      Repo.delete_all(Transaccion)
+      Repo.delete_all(Moneda)
+      Repo.delete_all(Usuario)
+      :ok
+    end
+
+    test "creo realizar_transferencia válida" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+      {:ok, transaccion} = Ledger.CLI.main(["realizar_transferencia", "-o=#{usuario_origen.id}", "-d=#{usuario_destino.id}", "-m=#{moneda.id}", "-a=10000"])
+
+      assert transaccion.tipo == "transferencia"
+      assert transaccion.monto == 10_000.0
+      assert transaccion.moneda_origen_id == moneda.id
+      assert transaccion.cuenta_origen == usuario_origen.id
+      assert transaccion.moneda_destino_id == moneda.id
+      assert transaccion.cuenta_destino == usuario_destino.id
+
+      insertada = Repo.get!(Transaccion, transaccion.id)
+      assert insertada.id == transaccion.id
+    end
+
+    test "falla cuando falta flag obligatorio" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
+        Ledger.CLI.main(["realizar_transferencia", "-o=#{usuario_origen.id}", "-m=#{moneda.id}", "-a=10000"])
+      end
+    end
+
+    test "falla cuando la cuenta origen no existe" do
+      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_transferencia",
+                 "-o=999999",
+                 "-d=#{usuario_destino.id}",
+                 "-m=#{moneda.id}",
+                 "-a=10000"
+               ])
+
+      assert {:cuenta_origen_usuario, {"Debe existir en la tabla Usuarios", _}} =
+               List.keyfind(changeset.errors, :cuenta_origen_usuario, 0)
+    end
+
+    test "falla cuando la cuenta destino no existe" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_transferencia",
+                 "-o=#{usuario_origen.id}",
+                 "-d=999999",
+                 "-m=#{moneda.id}",
+                 "-a=10000"
+               ])
+
+      assert {:cuenta_destino_usuario, {"Debe existir en la tabla Usuarios", _}} =
+               List.keyfind(changeset.errors, :cuenta_destino_usuario, 0)
+    end
+
+    test "falla cuando la moneda no existe" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_transferencia",
+                 "-o=#{usuario_origen.id}",
+                 "-d=#{usuario_destino.id}",
+                 "-m=999999",
+                 "-a=10000"
+               ])
+
+      assert Enum.any?(
+               [:moneda_origen, :moneda_destino],
+               fn campo ->
+                 match?({^campo, {"Debe existir en la tabla Monedas", _}}, List.keyfind(changeset.errors, campo, 0))
+               end
+             )
+    end
+
+    test "falla cuando el monto es negativo" do
+      {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Ledger.CLI.main([
+                 "realizar_transferencia",
+                 "-o=#{usuario_origen.id}",
+                 "-d=#{usuario_destino.id}",
+                 "-m=#{moneda.id}",
+                 "-a=-10"
+               ])
 
       assert {:monto, {"Debe ser mayor a cero", _}} = List.keyfind(changeset.errors, :monto, 0)
     end
