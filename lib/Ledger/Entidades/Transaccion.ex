@@ -25,24 +25,24 @@ defmodule Ledger.Entidades.Transaccion do
       :tipo,
       :moneda_origen_id,
       :moneda_destino_id,
-      :cuenta_origen,
-      :cuenta_destino
+      :cuenta_origen_id,
+      :cuenta_destino_id
     ])
-    |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen],
+    |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen_id],
       message: "Este campo es obligatorio"
     )
     |> validar_destinos_si_transferencia()
     |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
     |> assoc_constraint(:moneda_origen, message: "Debe existir en la tabla Monedas")
     |> assoc_constraint(:moneda_destino, message: "Debe existir en la tabla Monedas")
-    |> assoc_constraint(:cuenta_origen_usuario, message: "Debe existir en la tabla Usuarios")
-    |> assoc_constraint(:cuenta_destino_usuario, message: "Debe existir en la tabla Usuarios")
+    |> assoc_constraint(:cuenta_origen_id, message: "Debe existir en la tabla Cuentas")
+    |> assoc_constraint(:cuenta_destino_id, message: "Debe existir en la tabla Cuentas")
   end
 
   defp validar_destinos_si_transferencia(changeset) do
     case get_field(changeset, :tipo) do
       "transferencia" ->
-        validate_required(changeset, [:moneda_destino_id, :cuenta_destino],
+        validate_required(changeset, [:moneda_destino_id, :cuenta_destino_id],
           message: "Este campo es obligatorio en caso de transferencia"
         )
 
@@ -62,11 +62,11 @@ defmodule Ledger.Entidades.Transaccion do
         :tipo,
         :moneda_origen_id,
         :moneda_destino_id,
-        :cuenta_origen,
-        :cuenta_destino,
+        :cuenta_origen_id,
+        :cuenta_destino_id,
         :deshacer_de_id
       ])
-      |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen, :deshacer_de_id],
+      |> validate_required([:monto, :tipo, :moneda_origen_id, :cuenta_origen_id, :deshacer_de_id],
         message: "Este campo es obligatorio"
       )
       |> validate_change(:deshacer_de_id, fn :deshacer_de_id, value ->
@@ -77,10 +77,10 @@ defmodule Ledger.Entidades.Transaccion do
         end
       end)
       |> validate_number(:monto, greater_than: 0, message: "Debe ser mayor a cero")
-      |> assoc_constraint(:moneda_origen, message: "Debe existir en la tabla Monedas")
-      |> assoc_constraint(:moneda_destino, message: "Debe existir en la tabla Monedas")
-      |> assoc_constraint(:cuenta_origen_usuario, message: "Debe existir en la tabla Usuarios")
-      |> assoc_constraint(:cuenta_destino_usuario, message: "Debe existir en la tabla Usuarios")
+      |> assoc_constraint(:moneda_origen_id, message: "Debe existir en la tabla Monedas")
+      |> assoc_constraint(:moneda_destino_id, message: "Debe existir en la tabla Monedas")
+      |> assoc_constraint(:cuenta_origen_id, message: "Debe existir en la tabla Cuentas")
+      |> assoc_constraint(:cuenta_destino_id, message: "Debe existir en la tabla Cuentas")
       |> verificar_ultima_transaccion(original, repo)
     end)
   end
@@ -91,8 +91,8 @@ defmodule Ledger.Entidades.Transaccion do
       tipo: "reversa",
       moneda_origen_id: original.moneda_destino_id || original.moneda_origen_id,
       moneda_destino_id: original.moneda_origen_id,
-      cuenta_origen: original.cuenta_destino || original.cuenta_origen,
-      cuenta_destino: original.cuenta_destino && original.cuenta_origen
+      cuenta_origen_id: original.cuenta_destino_id || original.cuenta_origen_id,
+      cuenta_destino_id: original.cuenta_destino_id && original.cuenta_origen_id
     }
   end
 
@@ -101,7 +101,7 @@ defmodule Ledger.Entidades.Transaccion do
 
   defp verificar_ultima_transaccion(changeset, original, repo) do
     cuentas =
-      [original.cuenta_origen, original.cuenta_destino]
+      [original.cuenta_origen_id, original.cuenta_destino_id]
       |> Enum.reject(&is_nil/1)
       |> Enum.uniq()
 
@@ -127,7 +127,7 @@ defmodule Ledger.Entidades.Transaccion do
 
   defp ultima_transaccion(id_cuenta, repo) do
     __MODULE__
-    |> where([t], t.cuenta_origen == ^id_cuenta or t.cuenta_destino == ^id_cuenta)
+    |> where([t], t.cuenta_origen_id == ^id_cuenta or t.cuenta_destino_id == ^id_cuenta)
     |> order_by([t], desc: t.inserted_at, desc: t.id)
     |> limit(1)
     |> repo.one()
