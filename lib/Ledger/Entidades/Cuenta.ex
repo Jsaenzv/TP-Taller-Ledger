@@ -4,8 +4,8 @@ defmodule Ledger.Entidades.Cuenta do
   alias Ledger.Entidades.{Usuario, Moneda}
 
   schema "cuentas" do
-    belongs_to :usuario, Usuario
-    belongs_to :moneda, Moneda
+    belongs_to(:usuario, Usuario)
+    belongs_to(:moneda, Moneda)
     timestamps()
   end
 

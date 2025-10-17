@@ -1,5 +1,5 @@
 defmodule Ledger.Entidades do
-  alias Ledger.Entidades.{Moneda, Transaccion, Usuario}
+  alias Ledger.Entidades.{Cuenta, Moneda, Transaccion, Usuario}
   alias Ledger.Repo
 
   def obtener_usuario(id_usuario) do
@@ -44,6 +44,10 @@ defmodule Ledger.Entidades do
     Moneda.changeset(%Moneda{}, atributos) |> Repo.insert()
   end
 
+  def crear_cuenta(atributos) when is_map(atributos) do
+    Cuenta.changeset(%Cuenta{}, atributos) |> Repo.insert()
+  end
+
   def editar_moneda(%Moneda{} = moneda, precio_en_dolares) do
     Moneda.changeset(moneda, %{precio_en_dolares: precio_en_dolares}) |> Repo.update()
   end
@@ -64,6 +68,15 @@ defmodule Ledger.Entidades do
     case moneda do
       nil -> {:error, :not_found}
       _ -> Repo.delete(moneda)
+    end
+  end
+
+  def eliminar_cuenta(id_cuenta) do
+    cuenta = Repo.get(Cuenta, id_cuenta)
+
+    case cuenta do
+      nil -> {:error, :not_found}
+      _ -> Repo.delete(cuenta)
     end
   end
 
