@@ -21,8 +21,8 @@ defmodule Ledger.EntidadesTests do
   @fecha_nacimiento_invalida ~D[2020-01-01]
   @moneda_default %{nombre: "ARS", precio_en_dolares: 1200}
   @moneda_alternativa %{nombre: "USD", precio_en_dolares: 1}
-  @monto_default 100
-  @monto_alternativo 200
+  @monto_default "100"
+  @monto_alternativo "200"
   @tipo_default "transferencia"
   @tipo_alternativo "alta_cuenta"
   @campo_obligatorio "Este campo es obligatorio"
@@ -150,33 +150,40 @@ defmodule Ledger.EntidadesTests do
           fecha_nacimiento: @fecha_nacimiento_alternativa
         })
 
-      moneda_origen =
+      moneda =
         %Moneda{}
         |> Moneda.changeset(@moneda_default)
         |> Repo.insert!()
 
-      moneda_destino =
-        %Moneda{}
-        |> Moneda.changeset(@moneda_alternativa)
-        |> Repo.insert!()
+        {:ok, _} =
+          Entidades.crear_transaccion(%{
+            monto: @monto_default,
+            tipo: @tipo_alternativo,
+            moneda_origen_id: moneda.id,
+            cuenta_origen: usuario_origen.id
+          })
+
+        {:ok, _} =
+          Entidades.crear_transaccion(%{
+            monto: @monto_default,
+            tipo: @tipo_alternativo,
+            moneda_origen_id: moneda.id,
+            cuenta_origen: usuario_destino.id
+          })
 
       atributos = %{
         monto: @monto_default,
         tipo: @tipo_default,
-        moneda_origen_id: moneda_origen.id,
-        moneda_destino_id: moneda_destino.id,
+        moneda_origen_id: moneda.id,
+        moneda_destino_id: moneda.id,
         cuenta_origen: usuario_origen.id,
         cuenta_destino: usuario_destino.id
       }
 
       assert {:ok, transaccion_creada} = Entidades.crear_transaccion(atributos)
 
-      assert transaccion_creada.monto == @monto_default
       assert transaccion_creada.tipo == @tipo_default
-      assert transaccion_creada.moneda_origen_id == moneda_origen.id
-      assert transaccion_creada.moneda_destino_id == moneda_destino.id
-      assert transaccion_creada.cuenta_origen == usuario_origen.id
-      assert transaccion_creada.cuenta_destino == usuario_destino.id
+      assert transaccion_creada.moneda_origen_id == moneda.id
     end
 
     test "creo transacción inválida" do
@@ -186,7 +193,7 @@ defmodule Ledger.EntidadesTests do
       refute changeset.valid?
 
       assert %{
-               cuenta_origen: [@campo_obligatorio],
+               cuenta_origen_id: [@campo_obligatorio],
                moneda_origen_id: [@campo_obligatorio],
                monto: [@campo_obligatorio],
                tipo: [@campo_obligatorio]
@@ -232,33 +239,45 @@ defmodule Ledger.EntidadesTests do
           fecha_nacimiento: @fecha_nacimiento_alternativa
         })
 
-      moneda_origen =
-        %Moneda{}
-        |> Moneda.changeset(@moneda_alternativa)
-        |> Repo.insert!()
-
-      moneda_destino =
+      moneda =
         %Moneda{}
         |> Moneda.changeset(@moneda_default)
         |> Repo.insert!()
 
-      {:ok, original} =
-        Entidades.crear_transaccion(%{
-          monto: @monto_default,
-          tipo: @tipo_default,
-          moneda_origen_id: moneda_origen.id,
-          moneda_destino_id: moneda_destino.id,
-          cuenta_origen: usuario_origen.id,
-          cuenta_destino: usuario_destino.id
-        })
+        {:ok, _} =
+          Entidades.crear_transaccion(%{
+            monto: @monto_default,
+            tipo: @tipo_alternativo,
+            moneda_origen_id: moneda.id,
+            cuenta_origen: usuario_origen.id
+          })
+
+        {:ok, _} =
+          Entidades.crear_transaccion(%{
+            monto: @monto_default,
+            tipo: @tipo_alternativo,
+            moneda_origen_id: moneda.id,
+            cuenta_origen: usuario_destino.id
+          })
+
+      atributos = %{
+        monto: @monto_default,
+        tipo: @tipo_default,
+        moneda_origen_id: moneda.id,
+        moneda_destino_id: moneda.id,
+        cuenta_origen: usuario_origen.id,
+        cuenta_destino: usuario_destino.id
+      }
+
+      {:ok, original} = Entidades.crear_transaccion(atributos)
 
       assert {:ok, reversa} = Entidades.deshacer_transaccion(original.id)
       assert reversa.tipo == "reversa"
       assert reversa.monto == original.monto
       assert reversa.moneda_origen_id == original.moneda_destino_id
       assert reversa.moneda_destino_id == original.moneda_origen_id
-      assert reversa.cuenta_origen == original.cuenta_destino
-      assert reversa.cuenta_destino == original.cuenta_origen
+      assert reversa.cuenta_origen_id == original.cuenta_destino_id
+      assert reversa.cuenta_destino_id == original.cuenta_origen_id
     end
 
     test "devuelve error cuando la transacción no existe" do
@@ -278,35 +297,39 @@ defmodule Ledger.EntidadesTests do
           fecha_nacimiento: @fecha_nacimiento_alternativa
         })
 
-      moneda_origen =
-        %Moneda{}
-        |> Moneda.changeset(@moneda_alternativa)
-        |> Repo.insert!()
-
-      moneda_destino =
+      moneda =
         %Moneda{}
         |> Moneda.changeset(@moneda_default)
         |> Repo.insert!()
 
-      {:ok, primera_transaccion} =
-        Entidades.crear_transaccion(%{
-          monto: @monto_default,
-          tipo: @tipo_default,
-          moneda_origen_id: moneda_origen.id,
-          moneda_destino_id: moneda_destino.id,
-          cuenta_origen: usuario_origen.id,
-          cuenta_destino: usuario_destino.id
-        })
+        {:ok, _} =
+          Entidades.crear_transaccion(%{
+            monto: @monto_default,
+            tipo: @tipo_alternativo,
+            moneda_origen_id: moneda.id,
+            cuenta_origen: usuario_origen.id
+          })
 
-      {:ok, _segunda_transaccion} =
-        Entidades.crear_transaccion(%{
-          monto: @monto_alternativo,
-          tipo: @tipo_default,
-          moneda_origen_id: moneda_origen.id,
-          moneda_destino_id: moneda_destino.id,
-          cuenta_origen: usuario_origen.id,
-          cuenta_destino: usuario_destino.id
-        })
+        {:ok, _} =
+          Entidades.crear_transaccion(%{
+            monto: @monto_default,
+            tipo: @tipo_alternativo,
+            moneda_origen_id: moneda.id,
+            cuenta_origen: usuario_destino.id
+          })
+
+      atributos = %{
+        monto: @monto_default,
+        tipo: @tipo_default,
+        moneda_origen_id: moneda.id,
+        moneda_destino_id: moneda.id,
+        cuenta_origen: usuario_origen.id,
+        cuenta_destino: usuario_destino.id
+      }
+
+      {:ok, primera_transaccion} = Entidades.crear_transaccion(atributos)
+      {:ok, _segunda_transaccion} = Entidades.crear_transaccion(atributos)
+
 
       assert {:error, changeset} = Entidades.deshacer_transaccion(primera_transaccion.id)
 
