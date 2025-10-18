@@ -1,7 +1,7 @@
 defmodule Ledger.Entidades.TransaccionTest do
   use ExUnit.Case, async: false
 
-  alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB}
+  alias Ledger.Entidades.{Moneda, Transaccion, Usuario, FuncionesDB, Cuenta}
   alias Ledger.Repo
 
   setup do
@@ -18,15 +18,32 @@ defmodule Ledger.Entidades.TransaccionTest do
       |> Moneda.changeset(%{nombre: "ARS", precio_en_dolares: 0.001})
       |> Repo.insert!()
 
-    cuenta_origen =
+    usuario_origen =
       %Usuario{}
       |> Usuario.changeset(%{nombre: "juan", fecha_nacimiento: ~D[1990-01-01]})
       |> Repo.insert!()
 
-    cuenta_destino =
+    usuario_destino =
       %Usuario{}
       |> Usuario.changeset(%{nombre: "pedro", fecha_nacimiento: ~D[1992-02-02]})
       |> Repo.insert!()
+
+    cuenta_origen =
+      %Cuenta{}
+      |> Cuenta.changeset(%{usuario_id: usuario_origen.id, moneda_id: moneda_origen.id})
+      |> Repo.insert!()
+
+    cuenta_destino =
+      %Cuenta{}
+      |> Cuenta.changeset(%{usuario_id: usuario_destino.id, moneda_id: moneda_origen.id})
+      |> Repo.insert!()
+
+    cuenta_origen_2 =
+      %Cuenta{}
+      |> Cuenta.changeset(%{usuario_id: usuario_origen.id, moneda_id: moneda_destino.id})
+      |> Repo.insert!()
+
+
 
     {:ok,
      moneda_origen: moneda_origen,
@@ -49,8 +66,8 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       changeset = Transaccion.changeset(%Transaccion{}, atributos)
@@ -60,8 +77,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert %{monto: @monto_default, tipo: @tipo_default} = changeset.changes
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       assert %{} == FuncionesDB.errores_en(changeset)
     end
@@ -77,8 +94,8 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       changeset = Transaccion.changeset(%Transaccion{}, atributos)
@@ -87,8 +104,8 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       alias Ledger.Entidades.FuncionesDB
       assert %{monto: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
@@ -105,8 +122,8 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: nil,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       changeset = Transaccion.changeset(%Transaccion{}, atributos)
@@ -115,8 +132,8 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       assert %{tipo: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
     end
@@ -132,8 +149,8 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: nil,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       changeset = Transaccion.changeset(%Transaccion{}, atributos)
@@ -141,8 +158,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       refute changeset.valid?
 
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       assert %{moneda_origen_id: ["Este campo es obligatorio"]} ==
                FuncionesDB.errores_en(changeset)
@@ -160,7 +177,7 @@ defmodule Ledger.Entidades.TransaccionTest do
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
         cuenta_origen: nil,
-        cuenta_destino: cuenta_destino.id
+        cuenta_destino_id: cuenta_destino.id
       }
 
       changeset = Transaccion.changeset(%Transaccion{}, atributos)
@@ -169,9 +186,9 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
-      assert %{cuenta_origen: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
+      assert %{cuenta_origen_id: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta moneda_destino y el tipo es transferencia", %{
@@ -185,8 +202,8 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: nil,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       changeset = Transaccion.changeset(%Transaccion{}, atributos)
@@ -194,8 +211,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       refute changeset.valid?
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       assert %{moneda_destino_id: ["Este campo es obligatorio en caso de transferencia"]} ==
                FuncionesDB.errores_en(changeset)
@@ -212,7 +229,7 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
+        cuenta_origen_id: cuenta_origen.id,
         cuenta_destino: nil
       }
 
@@ -221,10 +238,10 @@ defmodule Ledger.Entidades.TransaccionTest do
       refute changeset.valid?
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
 
-      assert %{cuenta_destino: ["Este campo es obligatorio en caso de transferencia"]} ==
+      assert %{cuenta_destino_id: ["Este campo es obligatorio en caso de transferencia"]} ==
                FuncionesDB.errores_en(changeset)
     end
 
@@ -240,8 +257,8 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       changeset = Transaccion.changeset(%Transaccion{}, atributos)
@@ -250,8 +267,8 @@ defmodule Ledger.Entidades.TransaccionTest do
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       assert %{monto: ["Debe ser mayor a cero"]} == FuncionesDB.errores_en(changeset)
     end
@@ -268,15 +285,15 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: @moneda_origen_id_inexistente,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
 
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       assert %{moneda_origen: ["Debe existir en la tabla Monedas"]} ==
                FuncionesDB.errores_en(changeset)
@@ -294,22 +311,22 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: @moneda_destino_id_inexistente,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
       assert %{moneda_destino: ["Debe existir en la tabla Monedas"]} ==
                FuncionesDB.errores_en(changeset)
     end
 
     @cuenta_origen_inexistente 1_000_000
-    test "devuelve error porque la cuenta origen no existe en la tabla Usuarios", %{
+    test "devuelve error porque la cuenta origen no existe en la tabla Cuentas", %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
       cuenta_origen: _cuenta_origen,
@@ -320,22 +337,22 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: @cuenta_origen_inexistente,
-        cuenta_destino: cuenta_destino.id
+        cuenta_origen_id: @cuenta_origen_inexistente,
+        cuenta_destino_id: cuenta_destino.id
       }
 
       {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_destino == cuenta_destino.id
+      assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
-      assert %{cuenta_origen_usuario: ["Debe existir en la tabla Usuarios"]} ==
+      assert %{cuenta_origen: ["Debe existir en la tabla Cuentas"]} ==
                FuncionesDB.errores_en(changeset)
     end
 
     @cuenta_destino_inexistente 1_000_000
-    test "devuelve error porque la cuenta destino no existe en la tabla Usuarios", %{
+    test "devuelve error porque la cuenta destino no existe en la tabla Cuentas", %{
       moneda_origen: moneda_origen,
       moneda_destino: moneda_destino,
       cuenta_origen: cuenta_origen,
@@ -346,17 +363,17 @@ defmodule Ledger.Entidades.TransaccionTest do
         tipo: @tipo_default,
         moneda_origen_id: moneda_origen.id,
         moneda_destino_id: moneda_destino.id,
-        cuenta_origen: cuenta_origen.id,
-        cuenta_destino: @cuenta_destino_inexistente
+        cuenta_origen_id: cuenta_origen.id,
+        cuenta_destino_id: @cuenta_destino_inexistente
       }
 
       {:error, changeset} = Transaccion.changeset(%Transaccion{}, atributos) |> Repo.insert()
 
       assert changeset.changes.moneda_origen_id == moneda_origen.id
       assert changeset.changes.moneda_destino_id == moneda_destino.id
-      assert changeset.changes.cuenta_origen == cuenta_origen.id
+      assert changeset.changes.cuenta_origen_id == cuenta_origen.id
 
-      assert %{cuenta_destino_usuario: ["Debe existir en la tabla Usuarios"]} ==
+      assert %{cuenta_destino: ["Debe existir en la tabla Cuentas"]} ==
                FuncionesDB.errores_en(changeset)
     end
   end
@@ -375,8 +392,8 @@ defmodule Ledger.Entidades.TransaccionTest do
           tipo: @tipo_default,
           moneda_origen_id: moneda_origen.id,
           moneda_destino_id: moneda_destino.id,
-          cuenta_origen: cuenta_origen.id,
-          cuenta_destino: cuenta_destino.id
+          cuenta_origen_id: cuenta_origen.id,
+          cuenta_destino_id: cuenta_destino.id
         })
         |> Repo.insert!()
 
@@ -387,8 +404,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.monto == transaccion.monto
       assert changeset.changes.moneda_origen_id == transaccion.moneda_destino_id
       assert changeset.changes.moneda_destino_id == transaccion.moneda_origen_id
-      assert changeset.changes.cuenta_origen == transaccion.cuenta_destino
-      assert changeset.changes.cuenta_destino == transaccion.cuenta_origen
+      assert changeset.changes.cuenta_origen_id == transaccion.cuenta_destino_id
+      assert changeset.changes.cuenta_destino_id == transaccion.cuenta_origen_id
       assert changeset.changes.deshacer_de_id == transaccion.id
     end
 
@@ -405,8 +422,8 @@ defmodule Ledger.Entidades.TransaccionTest do
           tipo: @tipo_default,
           moneda_origen_id: moneda_origen.id,
           moneda_destino_id: moneda_destino.id,
-          cuenta_origen: cuenta_origen.id,
-          cuenta_destino: cuenta_destino.id
+          cuenta_origen_id: cuenta_origen.id,
+          cuenta_destino_id: cuenta_destino.id
         })
         |> Repo.insert!()
 
@@ -417,8 +434,8 @@ defmodule Ledger.Entidades.TransaccionTest do
           tipo: @tipo_default,
           moneda_origen_id: moneda_origen.id,
           moneda_destino_id: moneda_destino.id,
-          cuenta_origen: cuenta_origen.id,
-          cuenta_destino: cuenta_destino.id
+          cuenta_origen_id: cuenta_origen.id,
+          cuenta_destino_id: cuenta_destino.id
         })
         |> Repo.insert!()
 
@@ -429,7 +446,5 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert %{base: ["solo se puede deshacer la última transacción de cada cuenta involucrada"]} ==
                FuncionesDB.errores_en(changeset)
     end
-
-    # test: Transacción sin cuenta destino: crear una transacción con cuenta_destino nil y confirmar que la reversión mantiene esa ausencia coherentemente.
   end
 end
