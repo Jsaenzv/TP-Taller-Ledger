@@ -131,7 +131,7 @@ defmodule Ledger.CLI do
     Entidades.editar_moneda(id_moneda, precio_en_dolares)
   end
 
-  def main(["borrar moneda" | flags]) do
+  def main(["borrar_moneda" | flags]) do
     params = Parser.parsear_flags(flags)
 
     case Validador.validar_flags(params, ["id"]) do
