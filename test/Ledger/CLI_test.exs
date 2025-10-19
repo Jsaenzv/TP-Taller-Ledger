@@ -239,6 +239,29 @@ defmodule CLITest do
     end
   end
 
+  describe "CLI borrar moneda" do
+    test "elimina moneda existente" do
+      assert {:ok, moneda} =
+               Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
+      assert {:ok, moneda_eliminada} =
+               Ledger.CLI.main(["borrar moneda", "-id=#{moneda.id}"])
+
+      assert moneda_eliminada.id == moneda.id
+      assert Repo.get(Moneda, moneda.id) == nil
+    end
+
+    test "retorna error cuando la moneda no existe" do
+      assert {:error, :not_found} = Ledger.CLI.main(["borrar moneda", "-id=999999"])
+    end
+
+    test "raise cuando falta flag obligatorio" do
+      assert_raise RuntimeError, ~r/Error al validar los flags/, fn ->
+        Ledger.CLI.main(["borrar moneda"])
+      end
+    end
+  end
+
   describe "CLI ver_moneda" do
     test "ver_moneda válida" do
       atributos_moneda = %{nombre: "ARS", precio_en_dolares: 1200}
