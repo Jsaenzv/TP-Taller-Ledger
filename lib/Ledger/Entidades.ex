@@ -8,6 +8,10 @@ defmodule Ledger.Entidades do
     Repo.get(Usuario, id_usuario)
   end
 
+  def obtener_monedas() do
+    Repo.all(Moneda)
+  end
+
   def obtener_transaccion(id_transaccion) do
     Repo.get(Transaccion, id_transaccion)
   end
@@ -71,6 +75,15 @@ defmodule Ledger.Entidades do
 
   def crear_cuenta(atributos) when is_map(atributos) do
     Cuenta.changeset(%Cuenta{}, atributos) |> Repo.insert()
+  end
+
+  def obtener_transacciones(filtros) when is_map(filtros) do
+    query =
+      Enum.reduce(filtros, from(t in Transaccion), fn {campo, valor}, acc ->
+        from(t in acc, where: field(t, ^campo) == ^valor)
+      end)
+
+    Repo.all(query)
   end
 
   def obtener_cuenta(filtros) when is_map(filtros) do
@@ -147,6 +160,7 @@ defmodule Ledger.Entidades do
     usuario_id = Map.get(atributos, :cuenta_origen)
     moneda_id = Map.get(atributos, :moneda_origen_id)
     monto = Map.get(atributos, :monto)
+
     cuenta =
       case crear_cuenta(%{usuario_id: usuario_id, moneda_id: moneda_id, balance: monto}) do
         {:ok, cuenta} -> cuenta
@@ -160,12 +174,22 @@ defmodule Ledger.Entidades do
     |> insertar_transaccion()
   end
 
+  def obtener_cuentas(filtros) do
+    query =
+      Enum.reduce(filtros, from(c in Cuenta), fn {campo, valor}, acc ->
+        from(t in acc, where: field(t, ^campo) == ^valor)
+      end)
+
+    Repo.all(query)
+  end
+
   defp crear_transaccion_transferencia(atributos) do
     usuario_origen = Map.get(atributos, :cuenta_origen)
     usuario_destino = Map.get(atributos, :cuenta_destino)
     moneda_origen_id = Map.get(atributos, :moneda_origen_id)
     moneda_destino_id = Map.get(atributos, :moneda_destino_id)
     {monto, _} = Float.parse(Map.get(atributos, :monto))
+
     cuenta_origen =
       case obtener_cuenta(usuario_origen, moneda_origen_id) do
         {:ok, cuenta_origen} -> cuenta_origen
@@ -178,8 +202,16 @@ defmodule Ledger.Entidades do
         {:error, razon} -> Repo.rollback(razon)
       end
 
-    modificar_cuenta_balance(cuenta_origen.id, -monto)
-    modificar_cuenta_balance(cuenta_destino.id, monto)
+    balance = obtener_balance(cuenta_origen.id)
+
+    case balance - monto do
+      n when n >= 0 ->
+        modificar_cuenta_balance(cuenta_origen.id, -monto)
+        modificar_cuenta_balance(cuenta_destino.id, monto)
+
+      _ ->
+        Repo.rollback("saldo insuficiente")
+    end
 
     atributos
     |> Map.put(:cuenta_origen_id, cuenta_origen.id)
@@ -189,11 +221,19 @@ defmodule Ledger.Entidades do
     |> insertar_transaccion()
   end
 
+  defp obtener_balance(id_cuenta) do
+    case Repo.get(Cuenta, id_cuenta) do
+      nil -> {:error, :not_found}
+      %Cuenta{} = cuenta -> cuenta.balance
+    end
+  end
+
   defp crear_transaccion_swap(atributos) do
     usuario_id = Map.get(atributos, :cuenta_origen)
     moneda_origen_id = Map.get(atributos, :moneda_origen_id)
     moneda_destino_id = Map.get(atributos, :moneda_destino_id)
     {monto, _} = Float.parse(Map.get(atributos, :monto))
+
     cuenta_origen =
       case obtener_cuenta(usuario_id, moneda_origen_id) do
         {:ok, cuenta_origen} -> cuenta_origen

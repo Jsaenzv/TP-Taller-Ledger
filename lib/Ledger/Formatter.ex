@@ -1,20 +1,24 @@
 defmodule Ledger.Formatter do
-  alias Ledger.Constantes
+  alias Ledger.Entidades.Cuenta
+  alias Ledger.Entidades
 
-  def formattear_transacciones(transacciones) do
-    transacciones
-    |> Enum.map(fn fila -> Enum.map(Constantes.headers_transacciones(), &fila[&1]) end)
-    |> Enum.map(fn fila -> Enum.join(fila, Constantes.delimitador_csv()) end)
-    |> Enum.join("\n")
-  end
+  def formattear_balance(cuentas) when is_list(cuentas) do
+    cuentas
+    |> Enum.map(fn %Cuenta{} = c ->
+      moneda = Entidades.obtener_moneda(c.moneda_id)
+      usuario = Entidades.obtener_usuario(c.usuario_id)
 
-  def formattear_balance(balance) do
-    balance
-    |> Enum.map(fn {moneda, monto} ->
-      "#{moneda};#{:erlang.float_to_binary(monto, decimals: 6)}"
+      balance = :erlang.float_to_binary(c.balance, decimals: 6)
+
+      [
+        "Id usuario: #{usuario.id}",
+        "Nombre usuario: #{usuario.nombre}",
+        "Nombre moneda: #{moneda.nombre}",
+        "Balance: #{balance}"
+      ]
+      |> Enum.join("\n")
     end)
-    |> Enum.sort()
-    |> Enum.join("\n")
+    |> Enum.join("\n\n")
   end
 
   def formattear_usuario(%Ledger.Entidades.Usuario{} = usuario) do

@@ -155,21 +155,21 @@ defmodule Ledger.EntidadesTests do
         |> Moneda.changeset(@moneda_default)
         |> Repo.insert!()
 
-        {:ok, _} =
-          Entidades.crear_transaccion(%{
-            monto: @monto_default,
-            tipo: @tipo_alternativo,
-            moneda_origen_id: moneda.id,
-            cuenta_origen: usuario_origen.id
-          })
+      {:ok, _} =
+        Entidades.crear_transaccion(%{
+          monto: @monto_default,
+          tipo: @tipo_alternativo,
+          moneda_origen_id: moneda.id,
+          cuenta_origen: usuario_origen.id
+        })
 
-        {:ok, _} =
-          Entidades.crear_transaccion(%{
-            monto: @monto_default,
-            tipo: @tipo_alternativo,
-            moneda_origen_id: moneda.id,
-            cuenta_origen: usuario_destino.id
-          })
+      {:ok, _} =
+        Entidades.crear_transaccion(%{
+          monto: @monto_default,
+          tipo: @tipo_alternativo,
+          moneda_origen_id: moneda.id,
+          cuenta_origen: usuario_destino.id
+        })
 
       atributos = %{
         monto: @monto_default,
@@ -244,21 +244,21 @@ defmodule Ledger.EntidadesTests do
         |> Moneda.changeset(@moneda_default)
         |> Repo.insert!()
 
-        {:ok, _} =
-          Entidades.crear_transaccion(%{
-            monto: @monto_default,
-            tipo: @tipo_alternativo,
-            moneda_origen_id: moneda.id,
-            cuenta_origen: usuario_origen.id
-          })
+      {:ok, _} =
+        Entidades.crear_transaccion(%{
+          monto: @monto_default,
+          tipo: @tipo_alternativo,
+          moneda_origen_id: moneda.id,
+          cuenta_origen: usuario_origen.id
+        })
 
-        {:ok, _} =
-          Entidades.crear_transaccion(%{
-            monto: @monto_default,
-            tipo: @tipo_alternativo,
-            moneda_origen_id: moneda.id,
-            cuenta_origen: usuario_destino.id
-          })
+      {:ok, _} =
+        Entidades.crear_transaccion(%{
+          monto: @monto_default,
+          tipo: @tipo_alternativo,
+          moneda_origen_id: moneda.id,
+          cuenta_origen: usuario_destino.id
+        })
 
       atributos = %{
         monto: @monto_default,
@@ -302,21 +302,21 @@ defmodule Ledger.EntidadesTests do
         |> Moneda.changeset(@moneda_default)
         |> Repo.insert!()
 
-        {:ok, _} =
-          Entidades.crear_transaccion(%{
-            monto: @monto_default,
-            tipo: @tipo_alternativo,
-            moneda_origen_id: moneda.id,
-            cuenta_origen: usuario_origen.id
-          })
+      {:ok, _} =
+        Entidades.crear_transaccion(%{
+          monto: 1_000_000,
+          tipo: @tipo_alternativo,
+          moneda_origen_id: moneda.id,
+          cuenta_origen: usuario_origen.id
+        })
 
-        {:ok, _} =
-          Entidades.crear_transaccion(%{
-            monto: @monto_default,
-            tipo: @tipo_alternativo,
-            moneda_origen_id: moneda.id,
-            cuenta_origen: usuario_destino.id
-          })
+      {:ok, _} =
+        Entidades.crear_transaccion(%{
+          monto: 1_000_000,
+          tipo: @tipo_alternativo,
+          moneda_origen_id: moneda.id,
+          cuenta_origen: usuario_destino.id
+        })
 
       atributos = %{
         monto: @monto_default,
@@ -328,8 +328,7 @@ defmodule Ledger.EntidadesTests do
       }
 
       {:ok, primera_transaccion} = Entidades.crear_transaccion(atributos)
-      {:ok, _segunda_transaccion} = Entidades.crear_transaccion(atributos)
-
+      {:ok, segunda_transaccion} = Entidades.crear_transaccion(atributos)
 
       assert {:error, changeset} = Entidades.deshacer_transaccion(primera_transaccion.id)
 

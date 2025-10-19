@@ -1,68 +1,39 @@
 defmodule Ledger.CLI do
-  alias Ledger.Constantes
   alias Ledger.Parser
   alias Ledger.Validador
-  alias Ledger.Transacciones
-  alias Ledger.Balance
   alias Ledger.Output
   alias Ledger.Entidades
 
   def main(["transacciones" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    with :ok <-
-           Validador.validar_flags(
-             params,
-             [],
-             [
-               "cuenta_origen",
-               "cuenta_destino",
-               "input_path",
-               "id_usuario_origen/output_path",
-               "moneda"
-             ]
-           ),
-         :ok <- Validador.validar_campo_vacio(params, "moneda") do
-      :ok
-    else
-      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+    case Validador.validar_flags(params, [], [
+           "cuenta_origen",
+           "cuenta_destino"
+         ]) do
+      {:error, razon} -> raise("Error al válidar los flags. #{razon}")
+      _ -> nil
     end
 
-    output_path =
-      Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
+    transacciones = Entidades.obtener_transacciones(params)
 
-    input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
-
-    params_filtrados = Map.drop(params, ["id_usuario_origen/output_path", "input_path"])
-    output = Transacciones.transacciones(params_filtrados, input_path)
-
-    Output.output_transacciones(output, output_path)
+    Output.output_transacciones(transacciones)
   end
 
   def main(["balance" | flags]) do
     params = Parser.parsear_flags(flags)
 
-    with :ok <-
-           Validador.validar_flags(
-             params,
-             ["cuenta_origen"],
-             ["cuenta_destino", "input_path", "id_usuario_origen/output_path", "moneda"]
-           ),
-         :ok <- Validador.validar_campo_vacio(params, "cuenta_destino") do
-      :ok
-    else
-      {:error, razon} -> raise("Error al validar los flags. #{razon}")
+    case Validador.validar_flags(params, ["cuenta_origen"], ["moneda"]) do
+      {:error, razon} -> raise("Error al válidar los flags. #{razon}")
+      _ -> nil
     end
 
-    output_path =
-      Map.get(params, "id_usuario_origen/output_path", Constantes.default_output_path())
+    usuario = Entidades.obtener_usuario(Map.get(params, "cuenta_origen"))
+    id_moneda = Map.get(params, "moneda")
 
-    input_path = Map.get(params, "input_path", Constantes.csv_transacciones_path())
+    cuentas = Entidades.obtener_cuentas(%{usuario_id: usuario.id, moneda_id: id_moneda})
 
-    params_filtrados = Map.drop(params, ["id_usuario_origen/output_path", "input_path"])
-    output = Balance.balance(params_filtrados, input_path)
-
-    Output.output_balance(output, output_path)
+    Output.output_balance(cuentas)
   end
 
   def main(["crear_usuario" | flags]) do
@@ -208,7 +179,7 @@ defmodule Ledger.CLI do
     params = Parser.parsear_flags(flags)
 
     case Validador.validar_flags(params, [
-           "id_usuario_origen/output_path",
+           "id_usuario_origen",
            "id_usuario_destino",
            "monto",
            "moneda"
@@ -222,7 +193,7 @@ defmodule Ledger.CLI do
       tipo: "transferencia",
       moneda_origen_id: Map.get(params, "moneda"),
       moneda_destino_id: Map.get(params, "moneda"),
-      cuenta_origen: Map.get(params, "id_usuario_origen/output_path"),
+      cuenta_origen: Map.get(params, "id_usuario_origen"),
       cuenta_destino: Map.get(params, "id_usuario_destino")
     }
 

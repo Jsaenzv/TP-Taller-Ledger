@@ -1,27 +1,19 @@
 defmodule Ledger.Output do
   alias Ledger.Formatter
-  alias Ledger.Constantes
   alias Ledger.Entidades
 
-  def output_transacciones(output, path) do
-    default_output_path = Constantes.default_output_path()
-
-    case path do
-      ^default_output_path -> IO.puts(Formatter.formattear_transacciones(output))
-      _ -> File.write!(path, Formatter.formattear_transacciones(output))
-    end
+  def output_transacciones([]) do
+    IO.puts("No hay transacciones")
   end
 
-  def output_balance(output, path) do
-    default_output_path = Constantes.default_output_path()
+  def output_transacciones(transacciones) when is_list(transacciones) do
+    Enum.each(transacciones, fn transaccion ->
+      IO.puts(Formatter.formattear_transaccion(transaccion))
+    end)
+  end
 
-    case path do
-      ^default_output_path ->
-        IO.puts(Formatter.formattear_balance(output))
-
-      _ ->
-        File.write!(path, Formatter.formattear_balance(output))
-    end
+  def output_balance(balance) do
+    IO.puts(Formatter.formattear_balance(balance))
   end
 
   def output_ver_usuario(usuario) do

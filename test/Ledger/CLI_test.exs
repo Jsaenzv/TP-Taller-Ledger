@@ -46,184 +46,72 @@ defmodule CLITest do
     end
   end
 
-  test "ledger transacciones con path" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
+  describe "CLI transacciones" do
+    test "imprime transacciones sin filtros" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=ana", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
-    output =
-      capture_io(fn ->
-        assert :ok == Ledger.CLI.main(["transacciones", "-t=#{@transacciones_csv_test_path}"])
-      end)
+      {:ok, transaccion} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda.id}",
+          "-a=500"
+        ])
 
-    output_parseado = parsear_output(output, :string)
-    esperado = @output_esperado_sin_flags
-    # trim_trailing elimina "\n" del final si es que esta, caso contrario devuelve el mismo string
-    assert output_parseado == esperado
+      output =
+        capture_io(fn ->
+          assert :ok == Ledger.CLI.main(["transacciones"])
+        end)
+
+      assert output =~ "Transaccion:"
+      assert output =~ "  id: #{transaccion.id}"
+      assert output =~ "  tipo: alta_cuenta"
+      assert output =~ "  monto: 500.000000"
+    end
+
+    test "raise cuando flag moneda está presente" do
+      assert_raise RuntimeError, ~r/Error al válidar los flags/, fn ->
+        Ledger.CLI.main(["transacciones", "-m=ARS"])
+      end
+    end
   end
 
-  test "ledger transacciones sin path" do
-    esperado =
-      File.stream!(@default_csv_path)
-      |> CSV.decode!(separator: ?;)
-      # Elimino la primer fila que son encabezados
-      |> Stream.drop(1)
-      |> Enum.map_join("\n", fn fila -> Enum.join(fila, @delimitador_csv) end)
+  describe "CLI balance" do
+    test "raise cuando falta flag obligatorio" do
+      assert_raise RuntimeError, ~r/Error al válidar los flags/, fn ->
+        Ledger.CLI.main(["balance"])
+      end
+    end
 
-    output =
-      capture_io(fn ->
-        assert :ok == Ledger.CLI.main(["transacciones"])
-      end)
+    test "imprime balance para el usuario indicado" do
+      {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
+      {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
-    output_parseado = parsear_output(output, :string)
-    assert output_parseado == esperado
-  end
+      {:ok, _transaccion} =
+        Ledger.CLI.main([
+          "alta_cuenta",
+          "-u=#{usuario.id}",
+          "-m=#{moneda.id}",
+          "-a=1500"
+        ])
 
-  @esperado_userA "1;1757610001;USDT;;400.00;userA;;alta_cuenta\n12;1757610000;USDT;ETH;50.00;userA;userB;transferencia\n15;1757640000;USDT;BTC;200.00;userA;userC;transferencia"
-  test "ledger transacciones con cuenta origen" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
+      comando_balance = [
+        "balance",
+        "-c1=#{usuario.id}",
+        "-m=#{moneda.id}"
+      ]
 
-    output =
-      capture_io(fn ->
-        assert :ok ==
-                 Ledger.CLI.main([
-                   "transacciones",
-                   "-t=#{@transacciones_csv_test_path}",
-                   "-c1=userA"
-                 ])
-      end)
+      output =
+        capture_io(fn ->
+          assert :ok == Ledger.CLI.main(comando_balance)
+        end)
 
-    output_parseado = parsear_output(output, :string)
-    esperado = @esperado_userA
-    assert output_parseado == esperado
-  end
-
-  @esperado_userA_to_userB "12;1757610000;USDT;ETH;50.00;userA;userB;transferencia"
-  test "ledger transacciones con cuenta origen y cuenta destino" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
-
-    output =
-      capture_io(fn ->
-        assert :ok ==
-                 Ledger.CLI.main([
-                   "transacciones",
-                   "-t=#{@transacciones_csv_test_path}",
-                   "-c1=userA",
-                   "-c2=userB"
-                 ])
-      end)
-
-    output_parseado = parsear_output(output, :string)
-    esperado = @esperado_userA_to_userB
-    assert output_parseado == esperado
-  end
-
-  @esperado_cualquiera_to_userC "15;1757640000;USDT;BTC;200.00;userA;userC;transferencia\n16;1757650000;BTC;BTC;0.30;userB;userC;transferencia"
-  test "ledger transacciones con cuenta destino" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
-
-    output =
-      capture_io(fn ->
-        assert :ok ==
-                 Ledger.CLI.main([
-                   "transacciones",
-                   "-t=#{@transacciones_csv_test_path}",
-                   "-c2=userC"
-                 ])
-      end)
-
-    output_parseado = parsear_output(output, :string)
-    esperado = @esperado_cualquiera_to_userC
-    assert output_parseado == esperado
-  end
-
-  test "ledger transacciones con output path" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
-
-    capture_io(fn ->
-      assert :ok ==
-               Ledger.CLI.main([
-                 "transacciones",
-                 "-t=#{@transacciones_csv_test_path}",
-                 "-o=#{@output_path}"
-               ])
-    end)
-
-    esperado = @output_esperado_sin_flags
-    assert File.exists?(@output_path), "El programa no creo ningún archivo en el output esperado"
-    output = File.read!(@output_path)
-    output_parseado = parsear_output(output, :string)
-    assert output_parseado == esperado
-  end
-
-  @esperado_balance_userM %{"BTC" => 15.000000, "USDT" => 200.000000}
-  test "ledger balance sin output path" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
-
-    output =
-      capture_io(fn ->
-        assert :ok ==
-                 Ledger.CLI.main([
-                   "balance",
-                   "-c1=userM",
-                   "-t=#{@transacciones_csv_test_path}"
-                 ])
-      end)
-
-    esperado = @esperado_balance_userM
-
-    output_parseado = parsear_output(output, :map)
-
-    assert output_parseado == esperado
-  end
-
-  test "ledger balance con output flag" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
-
-    capture_io(fn ->
-      assert :ok ==
-               Ledger.CLI.main([
-                 "balance",
-                 "-c1=userM",
-                 "-t=#{@transacciones_csv_test_path}",
-                 "-o=#{@output_path}"
-               ])
-    end)
-
-    esperado = @esperado_balance_userM
-    assert File.exists?(@output_path), "El programa no creo ningún archivo en el output esperado"
-    output = File.read!(@output_path)
-    output_parseado = parsear_output(output, :map)
-
-    assert output_parseado == esperado
-  end
-
-  @esperado_balance_userC_convertido_USDT %{"USDT" => 29900.00}
-  test "ledger balance con conversión de moneda" do
-    assert File.exists?(@ejecutable_path), "Compila el escript con: mix escript.build"
-    File.write!(@transacciones_csv_test_path, @transacciones_csv_test_data)
-
-    output =
-      capture_io(fn ->
-        assert :ok ==
-                 Ledger.CLI.main([
-                   "balance",
-                   "-c1=userC",
-                   "-t=#{@transacciones_csv_test_path}",
-                   "-m=USDT"
-                 ])
-      end)
-
-    esperado = @esperado_balance_userC_convertido_USDT
-
-    output_parseado = parsear_output(output, :map)
-
-    assert output_parseado == esperado
+      assert output =~ "Id usuario: #{usuario.id}"
+      assert output =~ "Nombre usuario: #{usuario.nombre}"
+      assert output =~ "Nombre moneda: #{moneda.nombre}"
+      assert output =~ "Balance: 1500.000000"
+    end
   end
 
   describe "CLI crear_usuario" do
@@ -411,8 +299,8 @@ defmodule CLITest do
       assert {:error, changeset} =
                Ledger.CLI.main(["alta_cuenta", "-u=999999", "-m=#{moneda.id}", "-a=10000"])
 
-      assert %{usuario: ["Debe existir en la tabla Usuarios"]} == FuncionesDB.errores_en(changeset)
-
+      assert %{usuario: ["Debe existir en la tabla Usuarios"]} ==
+               FuncionesDB.errores_en(changeset)
     end
 
     test "falla cuando el monto es negativo" do
@@ -483,12 +371,14 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert razon == "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda.id}"
+      assert razon ==
+               "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda.id}"
     end
 
     test "falla cuando la cuenta destino no existe" do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
       {:ok, _alta_origen} =
         Ledger.CLI.main([
           "alta_cuenta",
@@ -506,7 +396,8 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert razon == "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda.id}"
+      assert razon ==
+               "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda.id}"
     end
 
     test "falla cuando el monto es negativo" do
@@ -610,7 +501,8 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert razon == "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda_origen.id}"
+      assert razon ==
+               "El usuario con id: 999999 no tiene una cuenta con la moneda con id: #{moneda_origen.id}"
     end
 
     test "falla cuando la moneda origen no existe" do
@@ -626,12 +518,14 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert razon == "El usuario con id: #{usuario.id} no tiene una cuenta con la moneda con id: 999999"
+      assert razon ==
+               "El usuario con id: #{usuario.id} no tiene una cuenta con la moneda con id: 999999"
     end
 
     test "falla cuando la moneda destino no existe" do
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, moneda_origen} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
       {:ok, _alta_origen} =
         Ledger.CLI.main([
           "alta_cuenta",
@@ -639,6 +533,7 @@ defmodule CLITest do
           "-m=#{moneda_origen.id}",
           "-a=10000"
         ])
+
       assert {:error, razon} =
                Ledger.CLI.main([
                  "realizar_swap",
@@ -648,7 +543,8 @@ defmodule CLITest do
                  "-a=10000"
                ])
 
-      assert razon == "El usuario con id: #{usuario.id} no tiene una cuenta con la moneda con id: 999999"
+      assert razon ==
+               "El usuario con id: #{usuario.id} no tiene una cuenta con la moneda con id: 999999"
     end
 
     test "falla cuando el monto es negativo" do
@@ -671,6 +567,7 @@ defmodule CLITest do
           "-m=#{moneda_destino.id}",
           "-a=1"
         ])
+
       assert {:error, %Ecto.Changeset{} = changeset} =
                Ledger.CLI.main([
                  "realizar_swap",
@@ -689,6 +586,7 @@ defmodule CLITest do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
       {:ok, _alta_origen} =
         Ledger.CLI.main([
           "alta_cuenta",
@@ -704,6 +602,7 @@ defmodule CLITest do
           "-m=#{moneda.id}",
           "-a=1000"
         ])
+
       {:ok, transferencia} =
         Ledger.CLI.main([
           "realizar_transferencia",
@@ -740,6 +639,7 @@ defmodule CLITest do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
+
       {:ok, _alta_origen} =
         Ledger.CLI.main([
           "alta_cuenta",
@@ -755,6 +655,7 @@ defmodule CLITest do
           "-m=#{moneda.id}",
           "-a=1000"
         ])
+
       {:ok, transferencia_uno} =
         Ledger.CLI.main([
           "realizar_transferencia",
@@ -784,7 +685,6 @@ defmodule CLITest do
 
   describe "CLI ver_transaccion" do
     test "ver transaccion válida" do
-
       {:ok, usuario} = Ledger.CLI.main(["crear_usuario", "-n=ana", "-b=1990-01-01"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=ARS", "-p=1200"])
 
@@ -823,6 +723,7 @@ defmodule CLITest do
       {:ok, usuario_origen} = Ledger.CLI.main(["crear_usuario", "-n=juan", "-b=1990-01-01"])
       {:ok, usuario_destino} = Ledger.CLI.main(["crear_usuario", "-n=pedro", "-b=1992-02-02"])
       {:ok, moneda} = Ledger.CLI.main(["crear_moneda", "-n=USD", "-p=1"])
+
       {:ok, _alta_origen} =
         Ledger.CLI.main([
           "alta_cuenta",
@@ -838,6 +739,7 @@ defmodule CLITest do
           "-m=#{moneda.id}",
           "-a=500"
         ])
+
       {:ok, transaccion} =
         Ledger.CLI.main([
           "realizar_transferencia",

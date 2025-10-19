@@ -43,8 +43,6 @@ defmodule Ledger.Entidades.TransaccionTest do
       |> Cuenta.changeset(%{usuario_id: usuario_origen.id, moneda_id: moneda_destino.id})
       |> Repo.insert!()
 
-
-
     {:ok,
      moneda_origen: moneda_origen,
      moneda_destino: moneda_destino,
@@ -188,7 +186,8 @@ defmodule Ledger.Entidades.TransaccionTest do
       assert changeset.changes.moneda_destino_id == moneda_destino.id
       assert changeset.changes.cuenta_destino_id == cuenta_destino.id
 
-      assert %{cuenta_origen_id: ["Este campo es obligatorio"]} == FuncionesDB.errores_en(changeset)
+      assert %{cuenta_origen_id: ["Este campo es obligatorio"]} ==
+               FuncionesDB.errores_en(changeset)
     end
 
     test "devuelve un error porque falta moneda_destino y el tipo es transferencia", %{
